@@ -17,7 +17,7 @@ int player_list_iterator_create(struct player_list_t *list, struct player_list_i
 * Frees the memory used by the given iterator.
 *
 * @param iterator The iterator to destroy
-* @return 0 if the iterator was destroyed successfully, non-zero otherwise
+* @return 0 after the iterator is destroyed
 */
 int player_list_iterator_destroy(struct player_list_iterator_t *iterator);
 
@@ -37,3 +37,11 @@ struct player_alias_t *player_list_iterator_next(struct player_list_iterator_t *
 * @return 0 if successful, non-zero otherwise
 */
 int player_list_create(struct player_list_t *list);
+
+/*
+* Checks if the given player list is empty
+* 
+* @param list Memory location that contains the list that needs to be checked
+* @return 1 if the list is empty, 0 otherwise
+*/
+int player_list_is_empty(struct player_list_t *list);
