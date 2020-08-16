@@ -48,14 +48,12 @@ uint16_t extractPortNumber(char const **argv)
 {
     if (!isInteger(argv[PORT_NUMBER_POSITION]))
     {
-        fprintf(stderr, "Error: PORT_NUMBER should be int\n");
-        exit(1);
+        gameError("command line", "PORT_NUMBER should be int", 1, 1);
     }
 
     int numero = atoi(argv[PORT_NUMBER_POSITION]);
     if (numero < 1 || numero > 65535) {
-        fprintf(stderr, "Error: PORT_NUMBER is out of range (1-65535)\n");
-        exit(1);
+        gameError("command line", "PORT_NUMBER is out of range (1-65535)", 1, 1);
     }
     return (uint16_t)numero;
 }
@@ -83,4 +81,24 @@ int isInteger(char *string)
 
     return 1;
 }
+
+/*
+* Prints a game error and optionally exits the program
+*
+* @param functionName The name of the function that caused the error
+* @param customMessage An additional message to append to the error report
+* @param shouldExit Indicates if the program should terminate after printing
+* @param exitStatus The exit status to use if exiting
+*/
+void gameError(char const *functionName, char const *customMessage, int shouldExit, int exitStatus)
+{
+    perror(functionName);
+    fprintf(stderr, "%s error: %s\n", functionName, customMessage);
+    if (shouldExit)
+    {
+        exit(exitStatus);
+    }
+    
+}
+
 }
