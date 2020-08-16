@@ -4,24 +4,45 @@
 #include <ctype.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
+#include "player_list.h"
 
+/* macro definitions */
 #define ARGUMENT_NUMBER 2
 #define PORT_NUMBER_POSITION 1
+#define CONNECTION_QUEUE_SIZE 5
 
+/* function declarations */
 void processArguments(int argc, char const **argv, struct sockaddr_in *address);
 void checkArgumentNumber(int argc, char const **argv);
 uint16_t extractPortNumber(char const **argv);
 int isInteger(char *string);
-    
+void gameError(char const *functionName, char const *customMessage, int shouldExit, int exitStatus);
+void setupMemory(struct sockaddr_in *address, struct player_list_t *list);
+struct sockaddr_in *makeNewAddress();
+void waitForConnections(struct sockaddr_in *address);
+pthread_t startGameThread();
+void *handleConnection(void *data);
+void *game(void *arg);
+
+/**/
+struct connection_info{
+    int fd;
+    struct sockaddr_in *address;
+};
+
+/* global */
+struct player_list_t *playerList;
+
 int main(int argc, char const *argv[])
 {
 
-    struct sockaddr_in serverAddress;
-    
-    processArguments(argc, argv, &serverAddress);
+    struct sockaddr_in *serverAddress;
 
+    setupMemory(serverAddress, playerList);
+    processArguments(argc, argv, serverAddress);
     startGameThread();
-    waitForConnections();
+    waitForConnections(serverAddress);
 
     return 0;
 }
@@ -101,4 +122,136 @@ void gameError(char const *functionName, char const *customMessage, int shouldEx
     
 }
 
+/*
+* Creates all needed data structures for the start of the game. Namely:
+* - global playerList to hold the players currently in game and their order
+* - server address struct
+* - Maybe something else in the future
+*
+*/
+void setupMemory(struct sockaddr_in *address, struct player_list_t *list)
+{
+    int error = player_list_create(list);
+    if (error)
+    {
+        gameError("player_list_create", "cannot create player list", 1, 1);
+    }
+
+    address = makeNewAddress();
+    if (address == NULL)
+    {
+        gameError("makeNewAddress", "cannot allocate server address", 1, 1);
+    }
+    
+}
+
+struct sockaddr_in *makeNewAddress()
+{
+    return calloc(1, sizeof(struct sockaddr_in));
+}
+
+/*
+* Create thread for the game and start it
+*
+* @return The tid of the newly created game thread
+*/
+pthread_t startGameThread()
+{
+    int error;
+    pthread_t newId;
+
+    error = pthread_create(newId, NULL, game, NULL);
+    if (error)
+    {
+        gameError("pthread_create", "cannot create game thread", 1, 1);
+    }
+    return newId;
+    
+}
+
+/*
+* Creates socket, binds address to it, listens for connections, accepts connections
+* and delegates handling them to new thread started in the detached state
+* 
+* @param address The address on which to listen for connections
+*/
+void waitForConnections(struct sockaddr_in *address)
+{
+    int addrLen;
+    struct sockaddr_in *address;
+    pthread_attr_t threadAttributes;
+    struct connection_info *connectionInfo;
+
+    int socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
+    if (socketDescriptor == -1)
+    {
+        gameError("socket", "cannot create socket", 1, 1);
+    }
+    
+    int error = bind(socketDescriptor, address, sizeof(struct sockaddr_in));
+    if (error)
+    {
+        gameError("bind", "cannot bind address to socket", 1, 1);
+    }
+    
+    error = listen(socketDescriptor, CONNECTION_QUEUE_SIZE);
+    if (error)
+    {
+        gameError("listen", "cannot listen on the socket", 1, 1);
+    }
+
+    error = pthread_attr_init(&threadAttributes);
+    if (error)
+    {
+        gameError("pthread_attr_init", "cannot initialize thread attribute", 1, 1);
+    }
+    error = pthread_attr_setdetachstate(&threadAttributes, PTHREAD_CREATE_DETACHED);
+    if (error)
+    {
+        gameError("pthread_attr_setdetachstate", "cannot set detach state on thread attribute", 1, 1);
+    }
+    
+    while (1)
+    {
+        address = makeNewAddress();
+        if (address == NULL)
+        {
+            gameError("makeNewAddress", "cannot allocate client address", 1, 1);
+        }
+        addrLen = sizeof(struct sockaddr_in);
+        error = accept(socketDescriptor, address, &addrLen);
+        if (error == -1)
+        {
+            gameError("accept", "cannot accept new connection", 1, 1);
+        }
+        connectionInfo = malloc(sizeof(struct connection_info));
+        if (connectionInfo == NULL)
+        {
+            gameError("malloc", "cannot allocate connection_info struct", 1, 1);
+        }
+        connectionInfo->address = address;
+        connectionInfo->fd = error;
+        pthread_create(NULL, &threadAttributes, handleConnection, connectionInfo);
+        
+    }
+    
+}
+
+void *handleConnection(void *data)
+{
+    struct connection_info *connectionInfo = (struct connection_info *)data;
+    //TODO talk the talk with client
+}
+
+/*Here be game*/
+
+/*
+* Entry point for the game loop
+*
+* @param arg Mandatory argument for a pthread routine
+* @return Probably nothing
+*/
+void *game(void *arg)
+{
+    /*body*/
 }
