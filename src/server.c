@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "player_list.h"
 
 /* macro definitions */
@@ -239,8 +240,87 @@ void waitForConnections(struct sockaddr_in *address)
 
 void *handleConnection(void *data)
 {
+    char command;
+    int error;
+    int receive;
+    int dataSize;
+    char username[30];
+    char password[30];
+
     struct connection_info *connectionInfo = (struct connection_info *)data;
-    //TODO talk the talk with client
+    int clientDescriptor = connectionInfo->fd;
+
+    // read command, either 'i' or 'a'
+    error = read(clientDescriptor, &command, 1);
+    if (error != 1)
+    {
+        // TODO do what? what would this even mean?
+    }
+    // read username length
+    error = read(clientDescriptor, &receive, sizeof(int));
+    if (error)
+    {
+        //TODO
+    }
+    dataSize = ntohl(receive);
+    // read username
+    error = readNBytes(clientDescriptor, username, dataSize);
+    if (error != dataSize)
+    {
+        //TODO
+    }
+    // read password length
+    error = read(clientDescriptor, &receive, sizeof(int));
+    if (error)
+    {
+        //TODO
+    }
+    dataSize = ntohl(receive);
+    // read password
+    error = readNBytes(clientDescriptor, password, dataSize);
+    if (error != dataSize)
+    {
+        //TODO
+    }
+    
+    switch (command)
+    {
+    case 'a':
+        //TODO let user log in and put them in the game
+        break;
+    case 'i':
+        //TODO save credentials and terminate connection
+        break;
+    default:
+        //TODO tell client this shouldn't have even happened
+        break;
+    }
+    
+
+    
+
+
+}
+
+/*
+* To be reasonably sure that n bytes were actually read into buffer
+* TODO
+*/
+int readNBytes(int fileDescriptor, void *buffer, int nbytes)
+{
+    int error;
+    int remaining = nbytes;
+    while (remaining)
+    {
+        error = read(fileDescriptor, buffer + (nbytes - remaining), remaining);
+        if (error == -1 || error == 0)
+        {
+            return -1;
+        }
+        remaining -= error;
+    }
+    
+    return nbytes;
 }
 
 /*Here be game*/
