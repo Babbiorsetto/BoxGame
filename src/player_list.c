@@ -83,3 +83,29 @@ int player_list_create(struct player_list_t *list)
     } else 
         return -1;
 }
+
+void player_list_add(struct player_list_t *list, struct player_node_t *player) 
+{
+    player_node_t *curr = NULL;
+
+    if(list == NULL || player == NULL) {
+        return;
+    } else {
+        pthread_mutex_lock(list->lock);
+
+        if(player_list_is_empty(list)) {
+            *list->first = *player;
+        } else {
+            curr = list->first;
+            while(curr->next != NULL) {
+                curr = curr->next;
+            }
+            *curr->next = *player;
+        }
+
+        pthread_mutex_unlock(list->lock);
+    }
+    return;
+}
+
+void player_list_next_round(struct player_list_t)

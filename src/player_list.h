@@ -9,7 +9,7 @@ struct player_list_iterator_t;
 *
 * @param list The list on which the new iterator cycles
 * @param iterator Memory location that will contain the new iterator, if the call to create succeded
-* @return 0 if the iterator was created successfully, non-zero otherwise
+* @return 0 if the iterator was created successfully, non-zero otherwise (specifically, -1 if the function cannot allocate enough memory for the iterator, -2 if the player list is empty)
 */
 int player_list_iterator_create(struct player_list_t *list, struct player_list_iterator_t *iterator);
 
@@ -34,7 +34,7 @@ struct player_alias_t *player_list_iterator_next(struct player_list_iterator_t *
 * Allocates memory for a player list and initializes it.
 *
 * @param list Memory location that will contain the new list, if the call succeded
-* @return 0 if successful, non-zero otherwise
+* @return 0 if successful, non-zero otherwise (specifically, -2 if there is not enough memory to create the lock for the list, -1 if there is not enough memory to create the list)
 */
 int player_list_create(struct player_list_t *list);
 
@@ -45,3 +45,12 @@ int player_list_create(struct player_list_t *list);
 * @return 1 if the list is empty, 0 otherwise
 */
 int player_list_is_empty(struct player_list_t *list);
+
+/*
+* Appends the given player to the given player list.
+* @param list is the memory location that contains the list to which the player must be added, player is the memory location that contains the player that is going to be added to the list
+* @return void
+*/
+void player_list_add(struct player_list_t *list, struct player_node_t *player);
+
+
