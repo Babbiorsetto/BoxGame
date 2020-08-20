@@ -6,12 +6,19 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "player_list.h"
+#include "player_alias.h"
 
 /* macro definitions */
 #define ARGUMENT_NUMBER 2
 #define PORT_NUMBER_POSITION 1
 #define CONNECTION_QUEUE_SIZE 5
+#define USER_CREDENTIALS_FILE "userCredentials"
+#define USERNAME_SIZE 30
+#define PASSWORD_SIZE 30
+#define USER_FILE_CREATE_PERMISSIONS S_IRUSR | S_IWUSR
+#define USER_FILE_OFLAGS O_WRONLY | O_CREAT | O_APPEND
 
 /* function declarations */
 void processArguments(int argc, char const **argv, struct sockaddr_in *address);
@@ -34,6 +41,8 @@ struct connection_info{
 
 /* global */
 struct player_list_t *playerList;
+int usersFile;
+pthread_mutex_t *fileLock;
 
 int main(int argc, char const *argv[])
 {
@@ -143,6 +152,24 @@ void setupMemory(struct sockaddr_in *address, struct player_list_t *list)
     {
         gameError("makeNewAddress", "cannot allocate server address", 1, 1);
     }
+
+    usersFile = open(USER_CREDENTIALS_FILE, USER_FILE_OFLAGS, USER_FILE_CREATE_PERMISSIONS);
+    if (usersFile == -1)
+    {
+        gameError("open", strcat("cannot open ", USER_CREDENTIALS_FILE), 1, 1);
+    }
+
+    fileLock = malloc(sizeof(pthread_mutex_t));
+    if (fileLock == NULL)
+    {
+        gameError("malloc", "cannot instantiate file lock", 1, 1);
+    }
+    error = pthread_mutex_init(fileLock, NULL);
+    if (error != 0)
+    {
+        gameError("pthread_mutex_init", "cannot initialize file lock", 1, 1;
+    }
+    
     
 }
 
@@ -238,14 +265,21 @@ void waitForConnections(struct sockaddr_in *address)
     
 }
 
+/*
+* Yes, synchronization on the credentials file is done at this level. 
+* Sue me
+* 
+* @param data A struct connection_info pointer coming from an established connection
+*/
 void *handleConnection(void *data)
 {
     char command;
+    char response;
     int error;
     int receive;
     int dataSize;
-    char username[30];
-    char password[30];
+    char username[USERNAME_SIZE];
+    char password[PASSWORD_SIZE];
 
     struct connection_info *connectionInfo = (struct connection_info *)data;
     int clientDescriptor = connectionInfo->fd;
@@ -256,52 +290,183 @@ void *handleConnection(void *data)
     {
         // TODO do what? what would this even mean?
     }
-    // read username length
-    error = read(clientDescriptor, &receive, sizeof(int));
-    if (error)
+    int again = 1;
+    while (again)
     {
-        //TODO
-    }
-    dataSize = ntohl(receive);
-    // read username
-    error = readNBytes(clientDescriptor, username, dataSize);
-    if (error != dataSize)
-    {
-        //TODO
-    }
-    // read password length
-    error = read(clientDescriptor, &receive, sizeof(int));
-    if (error)
-    {
-        //TODO
-    }
-    dataSize = ntohl(receive);
-    // read password
-    error = readNBytes(clientDescriptor, password, dataSize);
-    if (error != dataSize)
-    {
-        //TODO
-    }
-    
-    switch (command)
-    {
-    case 'a':
-        //TODO let user log in and put them in the game
-        break;
-    case 'i':
-        //TODO save credentials and terminate connection
-        break;
-    default:
-        //TODO tell client this shouldn't have even happened
-        break;
-    }
-    
+        // read username length
+        error = read(clientDescriptor, &receive, sizeof(int));
+        if (error)
+        {
+            //TODO
+        }
+        dataSize = ntohl(receive);
+        // read username. Must also contain \0
+        error = readNBytes(clientDescriptor, username, dataSize);
+        if (error != dataSize)
+        {
+            //TODO
+        }
+        // read password length
+        error = read(clientDescriptor, &receive, sizeof(int));
+        if (error)
+        {
+            //TODO
+        }
+        dataSize = ntohl(receive);
+        // read password
+        error = readNBytes(clientDescriptor, password, dataSize);
+        if (error != dataSize)
+        {
+            //TODO
+        }
+        
+        switch (command)
+        {
+        case 'a':
+            //TODO let user log in and put them in the game
+            pthread_mutex_lock(fileLock);
+            // player is registered
+            if (checkCredentials(username, password))
+            {
+                pthread_mutex_unlock(fileLock);
+                struct player_alias_t *alias = player_alias_create(username, connectionInfo->address, clientDescriptor);
+                if (alias == NULL)
+                {
+                    //TODO this is a really bad situation. System must be out of memory 
+                }
+                
+                // either they're already present and active or can't be added for some reason
+                if(!player_list_add(playerList, alias))
+                {
+                    response = 'a';
+                    player_alias_destroy(alias);
+                    write(clientDescriptor, response, 1);
+                }
+                // they are added
+                else
+                {
+                    response = 't';
+                    free(connectionInfo);
+                    again = 0;
+                    write(clientDescriptor, response, 1);
+                }
+                
+            }
+            else
+            {
+                pthread_mutex_unlock(fileLock);
+                response = 'f';
+                write(clientDescriptor, response, 1);
+            }
+            
+            
+            pthread_mutex_unlock(fileLock);
+            break;
+        case 'i':
+            pthread_mutex_lock(fileLock);
+            // save credentials and terminate connection
+            if (!isUsernamePresent(username))
+            {
+                insertUserCredentials(username, password);
+                pthread_mutex_unlock(fileLock);
+                response = 't';
+                write(clientDescriptor, response, 1);
+                close(clientDescriptor);
+                free(connectionInfo->address);
+                free(connectionInfo);
+                again = 0;
+            }
+            // warn client and go back to getting credentials
+            else
+            {
+                pthread_mutex_unlock(fileLock);
+                response = 'f';
+                write(clientDescriptor, response, 1);
+            }
+            break;
+        default:
+            //TODO tell client this shouldn't have even happened
+            break;
+        }
 
-    
-
-
+    }
+    return NULL;
 }
 
+/*
+* Checks if given string contains a username already present
+* in the user credentials file
+* 
+* @param username 
+* @return 1 if the username is already present, 0 if it isn't. -1 shouldn't ever be returned
+*/
+int isUsernamePresent(char *username)
+{
+    char buffer[USERNAME_SIZE];
+    char trash[PASSWORD_SIZE];
+    int error;
+    int fd = open(USER_CREDENTIALS_FILE, O_RDONLY);
+    if (fd == -1)
+    {
+        //TODO
+    }
+
+    while (1)
+    {
+        error = read(fd, buffer, USERNAME_SIZE);
+        if (error == -1)
+        {
+            //TODO
+        }
+        else if (error == 0)
+        {
+            return 0;
+        }   
+
+        if (strcmp(username, buffer) == 0)
+        {
+            return 1;
+        }
+
+        error = read(fd, trash, PASSWORD_SIZE);
+        if (error == -1)
+        {
+            //TODO
+        }
+    
+    }
+
+    return -1;
+}
+
+int insertUserCredentials(char *username, char *password)
+{
+    int error = write(usersFile, username, USERNAME_SIZE);
+    if (error == -1)
+    {
+        //TODO uh oh! This is bad
+    }
+    error = write(usersFile, password, PASSWORD_SIZE);
+    if (error == -1)
+    {
+        //TODO
+    }
+
+    return 0;
+}
+
+/*
+* Check that the user corresponding to the given info is present 
+* in the user credentials file
+*
+* @param username The username to check for
+* @param password The password corresponding to the username
+* @return 1 if the username-password combination is present in the credentials file, 0 otherwise
+*/
+int checkCredentials(char *username, char *password)
+{
+    /*TODO*/
+}
 /*
 * To be reasonably sure that n bytes were actually read into buffer
 * TODO

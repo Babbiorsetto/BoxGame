@@ -8,5 +8,7 @@ client scrive 'a'(accedi)
     client invia 'username size', 'username', 'password size', 'password'
     server risponde 't' e inserisce l'utente nel gioco, o reiserisce se era uscito
         client entra in loop di gioco
-    server risponde 'f'
+    server risponde 'f' perche' credenziali errate
         client chiede ancora credenziali (prevedere un modo di uscire?)
+    server risponde 'a' perche' credenziali giuste ma utente gia' in gioco e attivo
+        client chiede ancora credenziali
