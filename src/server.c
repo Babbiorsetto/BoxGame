@@ -167,7 +167,7 @@ void setupMemory(struct sockaddr_in *address, struct player_list_t *list)
     error = pthread_mutex_init(fileLock, NULL);
     if (error != 0)
     {
-        gameError("pthread_mutex_init", "cannot initialize file lock", 1, 1;
+        gameError("pthread_mutex_init", "cannot initialize file lock", 1, 1);
     }
     
     
