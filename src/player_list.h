@@ -58,3 +58,11 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player);
 * @return void
 */
 void player_list_purge(struct player_list_t *list);
+
+/*
+* Puts caller in wait for the given list to not be empty. 
+* Returns when the list contains any element.
+* 
+* @param list The list to wait on
+*/
+void player_list_waitOnEmpty(struct player_list_t *list);

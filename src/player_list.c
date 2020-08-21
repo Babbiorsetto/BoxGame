@@ -7,6 +7,7 @@
 struct player_list_t
 {
     pthread_mutex_t *lock;
+    pthread_cond_t *notEmpty;
     struct player_node_t *first;
 };
 
@@ -93,8 +94,30 @@ int player_list_create(struct player_list_t *list)
         return -2;
     }
 
+    if ((list->notEmpty = malloc(sizeof(pthread_cond_t))) == NULL)
+    {
+        free(list->lock);
+        free(list);
+        return -1;
+    }
+    
     list->first = NULL;
-    pthread_mutex_init(list->lock, NULL);
+    if (pthread_mutex_init(list->lock, NULL) != 0)
+    {
+        free(list->notEmpty);
+        free(list->lock);
+        free(list);
+        return -1;
+    }
+    if (pthread_cond_init(list->notEmpty, NULL) != 0)
+    {
+        pthread_mutex_destroy(list->lock);
+        free(list->notEmpty);
+        free(list->lock);
+        free(list);
+        return -1;
+    }
+    
     return 0;
 }
 
@@ -107,41 +130,40 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
     {
         return -1;
     }
+    
+    if ((newnode = malloc(sizeof(struct player_node_t))) == NULL)
+    {
+        return -2;
+    }
+    newnode->player = player;
+    newnode->next = NULL;
+
+    pthread_mutex_lock(list->lock);
+
+    if (list->first == NULL)
+    {
+        list->first = newnode;
+    }
     else
     {
-        pthread_mutex_lock(list->lock);
+        curr = list->first;
+        while (curr->next != NULL)
+        {
 
-        if ((newnode = malloc(sizeof(struct player_node_t))) == NULL)
-        {
-            return -2;
-        }
-        newnode->player = player;
-        newnode->next = NULL;
-
-        if (list->first == NULL)
-        {
-            list->first = newnode;
-        }
-        else
-        {
-            curr = list->first;
-            while (curr->next != NULL)
+            if (strcmp(curr->player->username, player->username) == 0)
             {
-
-                if ((strcmp(curr->player->username, player->username)) != 0)
-                {
-                    pthread_mutex_unlock(list->lock);
-                    return 0;
-                }
-
-                curr = curr->next;
+                pthread_mutex_unlock(list->lock);
+                free(newnode);
+                return 0;
             }
 
-            curr->next = newnode;
+            curr = curr->next;
         }
 
-        pthread_mutex_unlock(list->lock);
+        curr->next = newnode;
     }
+    pthread_cond_signal(list->notEmpty);
+    pthread_mutex_unlock(list->lock);
     return 1;
 }
 
@@ -191,4 +213,14 @@ void player_list_purge(struct player_list_t *list)
         pthread_mutex_unlock(list->lock);
     }
     return;
+}
+
+void player_list_waitOnEmpty(struct player_list_t *list)
+{
+    pthread_mutex_lock(list->lock);
+    while (list->first == NULL)
+    {
+        pthread_cond_wait(list->notEmpty, list->lock);
+    }
+    pthread_mutex_unlock(list->lock);
 }
