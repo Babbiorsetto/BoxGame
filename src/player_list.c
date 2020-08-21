@@ -24,7 +24,7 @@ struct player_list_iterator_t
 
 int player_list_iterator_create(struct player_list_t *list, struct player_list_iterator_t *iterator)
 {
-    if((*iterator = malloc(sizeof(player_list_iterator_t))) == NULL)
+    if((iterator = malloc(sizeof(struct player_list_iterator_t))) == NULL)
         return -1;
 
     else {
@@ -48,7 +48,7 @@ int player_list_iterator_destroy(struct player_list_iterator_t *iterator)
 
 struct player_alias_t *player_list_iterator_next(struct player_list_iterator_t *iterator, int *last)
 {
-    player_alias_t *current_player;
+    struct player_alias_t *current_player;
 
     pthread_mutex_lock(iterator->list->lock);
     current_player = iterator->current->player;
@@ -76,7 +76,7 @@ int player_list_is_empty(struct player_list_t *list)
 
 int player_list_create(struct player_list_t *list) 
 {
-    if((list = malloc(sizeof(player_list_t))) == NULL) {
+    if((list = malloc(sizeof(struct player_list_t))) == NULL) {
         return -1;
     }  
 
@@ -92,15 +92,15 @@ int player_list_create(struct player_list_t *list)
 
 int player_list_add(struct player_list_t *list, struct player_alias_t *player) 
 {
-    player_node_t *curr = NULL;
-    player_node_t *newnode = NULL;
+    struct player_node_t *curr = NULL;
+    struct player_node_t *newnode = NULL;
 
     if(list == NULL || player == NULL) {
         return -1;
     } else {
         pthread_mutex_lock(list->lock);
 
-        if((newnode = malloc(sizeof(player_node_t))) == NULL) {
+        if((newnode = malloc(sizeof(struct player_node_t))) == NULL) {
             return -2;
         }
         newnode->player = player;
@@ -130,7 +130,7 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
 
 void player_list_purge(struct player_list_t *list) 
 {
-    player_node_t *curr, *prev = NULL;
+    struct player_node_t *curr, *prev = NULL;
     pthread_mutex_lock(list->lock);
     if (list->first != NULL){
 
