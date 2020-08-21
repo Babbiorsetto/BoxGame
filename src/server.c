@@ -461,12 +461,61 @@ int insertUserCredentials(char *username, char *password)
 *
 * @param username The username to check for
 * @param password The password corresponding to the username
-* @return 1 if the username-password combination is present in the credentials file, 0 otherwise
+* @return 1 if the username-password combination is present in the credentials file, 0 if not. -1 on error
 */
 int checkCredentials(char *username, char *password)
 {
-    /*TODO*/
+    char nameBuffer[USERNAME_SIZE];
+    char passBuffer[PASSWORD_SIZE];
+    int credentialsFile;
+    int error;
+
+    credentialsFile = open(USER_CREDENTIALS_FILE, O_RDONLY);
+    if (credentialsFile == -1)
+    {
+        return -1;
+    }
+    
+    while (1)
+    {
+        error = read(usersFile, nameBuffer, USERNAME_SIZE);
+        if (error == -1)
+        {
+            return -1;
+        }
+        // file is empty or everything has been read already
+        if (error == 0)
+        {
+            close(credentialsFile);
+            return 0;
+        }
+        
+        error = read(usersFile, passBuffer, PASSWORD_SIZE);
+        if (error == -1)
+        {
+            return -1;
+        }
+        
+        if (strcmp(username, nameBuffer) == 0)
+        {
+            if (strcmp(password, passBuffer) == 0)
+            {
+                close(credentialsFile);
+                return 1;
+            }
+            // username matched but password didn't
+            else
+            {
+                close(credentialsFile);
+                return 0;
+            }
+            
+        }
+        
+    }
+    return -1;
 }
+
 /*
 * To be reasonably sure that n bytes were actually read into buffer
 * TODO
