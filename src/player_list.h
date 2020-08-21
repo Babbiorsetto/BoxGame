@@ -58,4 +58,3 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player);
 * @return void
 */
 void player_list_purge(struct player_list_t *list);
-
