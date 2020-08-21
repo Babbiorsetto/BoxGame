@@ -2,6 +2,7 @@
 #include "player_alias.h"
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct player_list_t
 {
@@ -28,9 +29,10 @@ int player_list_iterator_create(struct player_list_t *list, struct player_list_i
 
     else {
         iterator->list = list;
-        if(!(player_list_is_empty(list))) {
+        if(!(player_list_is_empty(list))) {     //if the list is empty, the iterator will be freed
             iterator->current = iterator->list->first;
         } else {
+            free(iterator);
             return -2;
         }
         return 0;
@@ -74,34 +76,43 @@ int player_list_is_empty(struct player_list_t *list)
 
 int player_list_create(struct player_list_t *list) 
 {
-    if(!(list = malloc(sizeof(player_list_t))) == NULL) {
-        if(!(list->lock = malloc(sizeof(pthread_mutex_t)) == NULL)) {
-            list->first = NULL;
-            pthread_mutex_init(list->lock, NULL);
-            return 0;
-        } else 
-            return -2;
-    } else 
+    if((list = malloc(sizeof(player_list_t))) == NULL) {
         return -1;
+    }  
+
+    if((list->lock = malloc(sizeof(pthread_mutex_t))) == NULL) {
+        free(list);
+        return -2;
+    }
+
+    list->first = NULL;
+    pthread_mutex_init(list->lock, NULL);
+    return 0;
 }
 
 int player_list_add(struct player_list_t *list, struct player_alias_t *player) 
 {
     player_node_t *curr = NULL;
-    player_node_t *pl = NULL;
+    player_node_t *newnode = NULL;
 
     if(list == NULL || player == NULL) {
         return -1;
     } else {
         pthread_mutex_lock(list->lock);
 
+        if((newnode = malloc(sizeof(player_node_t))) == NULL) {
+            return -2;
+        }
+        newnode->player = player;
+        newnode->next = NULL;
+
         if(list->first == NULL) {
-            *list->first = *player;
+            list->first = newnode;
         } else {
             curr = list->first;
             while(curr->next != NULL) {
 
-                if(curr->player == player) {
+                if((strcmp(curr->player->username, player->username)) != 0) {
                     pthread_mutex_unlock(list->lock);
                     return 0;
                     }
@@ -109,13 +120,7 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
                 curr = curr->next;
             }
 
-            if((pl = malloc(sizeof(player_node_t))) == NULL) {
-                return -2;
-            }
-            pl->player = player;
-            pl->next = NULL;
-
-            *curr->next = *pl;
+            curr->next = newnode;
         }
 
         pthread_mutex_unlock(list->lock);
@@ -126,8 +131,8 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
 void player_list_purge(struct player_list_t *list) 
 {
     player_node_t *curr, *prev = NULL;
-    if (!player_list_is_empty(list)){
-        pthread_mutex_lock(list->lock);
+    pthread_mutex_lock(list->lock);
+    if (list->first != NULL){
 
         curr = list->first;
         prev = list->first;
@@ -138,11 +143,13 @@ void player_list_purge(struct player_list_t *list)
 
                 if(curr == list->first) {
                     list->first = list->first->next;
+                    player_alias_destroy(curr->player);
                     free(curr);
                     curr = list->first;
                     prev = curr;
                 } else {
                     prev->next = curr->next;
+                    player_alias_destroy(curr->player);
                     free(curr);
                     curr=prev->next;
                 }
@@ -150,6 +157,12 @@ void player_list_purge(struct player_list_t *list)
 
             prev = curr;
             curr = curr->next;
+        }
+
+        if(!(curr->player->active)) {   //if the last player in the list is inactive, it will be removed
+            player_alias_destroy(curr->player);
+            free(curr);
+            prev = NULL;
         }
         pthread_mutex_unlock(list->lock);
     }
