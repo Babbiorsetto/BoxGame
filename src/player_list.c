@@ -77,6 +77,7 @@ int player_list_create(struct player_list_t *list)
     if(!(list = malloc(sizeof(player_list_t))) == NULL) {
         if(!(list->lock = malloc(sizeof(pthread_mutex_t)) == NULL)) {
             list->first = NULL;
+            pthread_mutex_init(list->lock, NULL);
             return 0;
         } else 
             return -2;
@@ -84,28 +85,73 @@ int player_list_create(struct player_list_t *list)
         return -1;
 }
 
-void player_list_add(struct player_list_t *list, struct player_node_t *player) 
+int player_list_add(struct player_list_t *list, struct player_alias_t *player) 
 {
     player_node_t *curr = NULL;
+    player_node_t *pl = NULL;
 
     if(list == NULL || player == NULL) {
-        return;
+        return -1;
     } else {
         pthread_mutex_lock(list->lock);
 
-        if(player_list_is_empty(list)) {
+        if(list->first == NULL) {
             *list->first = *player;
         } else {
             curr = list->first;
             while(curr->next != NULL) {
+
+                if(curr->player == player) {
+                    pthread_mutex_unlock(list->lock);
+                    return 0;
+                    }
+
                 curr = curr->next;
             }
-            *curr->next = *player;
+
+            if((pl = malloc(sizeof(player_node_t))) == NULL) {
+                return -2;
+            }
+            pl->player = player;
+            pl->next = NULL;
+
+            *curr->next = *pl;
         }
 
         pthread_mutex_unlock(list->lock);
     }
-    return;
+    return 1;
 }
 
-void player_list_next_round(struct player_list_t)
+void player_list_purge(struct player_list_t *list) 
+{
+    player_node_t *curr, *prev = NULL;
+    if (!player_list_is_empty(list)){
+        pthread_mutex_lock(list->lock);
+
+        curr = list->first;
+        prev = list->first;
+
+        while(curr->next != NULL) {
+
+            if (!(curr->player->active)) {
+
+                if(curr == list->first) {
+                    list->first = list->first->next;
+                    free(curr);
+                    curr = list->first;
+                    prev = curr;
+                } else {
+                    prev->next = curr->next;
+                    free(curr);
+                    curr=prev->next;
+                }
+            }
+
+            prev = curr;
+            curr = curr->next;
+        }
+        pthread_mutex_unlock(list->lock);
+    }
+    return;
+}
