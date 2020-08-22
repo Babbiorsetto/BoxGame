@@ -74,19 +74,19 @@ int player_list_is_empty(struct player_list_t *list)
     return check;
 }
 
-int player_list_create(struct player_list_t *list) 
+int player_list_create(struct player_list_t **list) 
 {
-    if((list = malloc(sizeof(struct player_list_t))) == NULL) {
+    if((*list = malloc(sizeof(struct player_list_t))) == NULL) {
         return -1;
     }  
 
-    if((list->lock = malloc(sizeof(pthread_mutex_t))) == NULL) {
-        free(list);
+    if(((*list)->lock = malloc(sizeof(pthread_mutex_t))) == NULL) {
+        free(*list);
         return -2;
     }
 
-    list->first = NULL;
-    pthread_mutex_init(list->lock, NULL);
+    (*list)->first = NULL;
+    pthread_mutex_init((*list)->lock, NULL);
     return 0;
 }
 

@@ -32,10 +32,10 @@ struct player_alias_t *player_list_iterator_next(struct player_list_iterator_t *
 /*
 * Allocates memory for a player list and initializes it.
 *
-* @param list Memory location that will contain the new list, if the call succeded
+* @param list Memory location that will contain a pointer to the new list, if the call succeded
 * @return 0 if successful, non-zero otherwise (specifically, -2 if there is not enough memory to create the lock for the list, -1 if there is not enough memory to create the list)
 */
-int player_list_create(struct player_list_t *list);
+int player_list_create(struct player_list_t **list);
 
 /*
 * Checks if the given player list is empty
