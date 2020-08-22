@@ -90,14 +90,14 @@ int player_list_create(struct player_list_t **list)
 
     if (((*list)->lock = malloc(sizeof(pthread_mutex_t))) == NULL)
     {
-        free(list);
+        free(*list);
         return -2;
     }
 
     if (((*list)->notEmpty = malloc(sizeof(pthread_cond_t))) == NULL)
     {
-        free(list->lock);
-        free(list);
+        free((*list)->lock);
+        free(*list);
         return -1;
     }
     
