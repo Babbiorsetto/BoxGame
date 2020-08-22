@@ -140,16 +140,18 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
 
     pthread_mutex_lock(list->lock);
 
+    // the list is empty
     if (list->first == NULL)
     {
         list->first = newnode;
     }
+    // it is not empty, go to the end
     else
     {
         curr = list->first;
         while (curr->next != NULL)
         {
-
+            // meanwhile if you find the player is already in
             if (strcmp(curr->player->username, player->username) == 0)
             {
                 pthread_mutex_unlock(list->lock);
@@ -160,6 +162,7 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
             curr = curr->next;
         }
 
+        // reached the end. Put new player in
         curr->next = newnode;
     }
     pthread_cond_signal(list->notEmpty);
@@ -182,7 +185,7 @@ void player_list_purge(struct player_list_t *list)
 
             if (!(curr->player->active))
             {
-
+                // the player to remove is in first position
                 if (curr == list->first)
                 {
                     list->first = list->first->next;
@@ -191,6 +194,7 @@ void player_list_purge(struct player_list_t *list)
                     curr = list->first;
                     prev = curr;
                 }
+                // every other position except for last
                 else
                 {
                     prev->next = curr->next;
@@ -204,6 +208,7 @@ void player_list_purge(struct player_list_t *list)
             curr = curr->next;
         }
 
+        // reached the last position
         if (!(curr->player->active))
         { //if the last player in the list is inactive, it will be removed
             player_alias_destroy(curr->player);
