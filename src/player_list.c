@@ -81,40 +81,40 @@ struct player_alias_t *player_list_iterator_next(struct player_list_iterator_t *
     return current_player;
 }
 
-int player_list_create(struct player_list_t *list)
+int player_list_create(struct player_list_t **list)
 {
-    if ((list = malloc(sizeof(struct player_list_t))) == NULL)
+    if ((*list = malloc(sizeof(struct player_list_t))) == NULL)
     {
         return -1;
     }
 
-    if ((list->lock = malloc(sizeof(pthread_mutex_t))) == NULL)
+    if (((*list)->lock = malloc(sizeof(pthread_mutex_t))) == NULL)
     {
-        free(list);
+        free(*list);
         return -2;
     }
 
-    if ((list->notEmpty = malloc(sizeof(pthread_cond_t))) == NULL)
+    if (((*list)->notEmpty = malloc(sizeof(pthread_cond_t))) == NULL)
     {
-        free(list->lock);
-        free(list);
+        free((*list)->lock);
+        free(*list);
         return -1;
     }
     
-    list->first = NULL;
-    if (pthread_mutex_init(list->lock, NULL) != 0)
+    (*list)->first = NULL;
+    if (pthread_mutex_init((*list)->lock, NULL) != 0)
     {
-        free(list->notEmpty);
-        free(list->lock);
-        free(list);
+        free((*list)->notEmpty);
+        free((*list)->lock);
+        free(*list);
         return -1;
     }
-    if (pthread_cond_init(list->notEmpty, NULL) != 0)
+    if (pthread_cond_init((*list)->notEmpty, NULL) != 0)
     {
-        pthread_mutex_destroy(list->lock);
-        free(list->notEmpty);
-        free(list->lock);
-        free(list);
+        pthread_mutex_destroy((*list)->lock);
+        free((*list)->notEmpty);
+        free((*list)->lock);
+        free(*list);
         return -1;
     }
     
