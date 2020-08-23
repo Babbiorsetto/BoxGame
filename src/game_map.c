@@ -20,7 +20,7 @@
 */
 struct game_map_t
 {
-    unsigned short **data;
+    unsigned short *data;
     unsigned short width;
     unsigned short height;
 };
@@ -34,10 +34,15 @@ struct game_map_t
 */
 
 #define PLAYER_BITMASK 1
+#define PLAYER_LSB 0
 #define BOX_BITMASK 6
+#define BOX_LSB 1
 #define DROPOFF_BITMASK 24
+#define DROPOFF_LSB 3
 #define DURATION_BITMASK 480
+#define DURATION_LSB 5
 #define OBSTACLE_BITMASK 512
+#define OBSTACLE_LSB 9
 
 int game_map_create(struct game_map_t **map, unsigned short width, unsigned short height)
 {
@@ -46,7 +51,7 @@ int game_map_create(struct game_map_t **map, unsigned short width, unsigned shor
     {
         return -1;
     }    
-    (*map)->data = malloc(sizeof(unsigned short) * width * height);
+    (*map)->data = calloc(width * height, sizeof(unsigned short));
     if ((*map)->data == NULL)
     {
         free(*map);
@@ -56,4 +61,122 @@ int game_map_create(struct game_map_t **map, unsigned short width, unsigned shor
     (*map)->height = height;
     (*map)->width = width;
     return 0;
+}
+
+int game_map_destroy(struct game_map_t *map)
+{
+    if (map == NULL)
+    {
+        return -1;
+    }
+
+    free(map->data);
+    free(map);
+    return 0;
+}
+
+int game_map_hasPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    return (val & PLAYER_BITMASK) >> PLAYER_LSB;
+    
+}
+
+int game_map_hasObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    return (val & OBSTACLE_BITMASK) >> OBSTACLE_LSB;
+}
+
+int game_map_hasBox(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    return (val & BOX_BITMASK) >> BOX_LSB;
+}
+
+int game_map_boxDuration(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    return (val & DURATION_BITMASK) >> DURATION_LSB;
+}
+
+int game_map_hasDropoff(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    return (val & DROPOFF_BITMASK) >> DROPOFF_LSB;
+}
+
+int game_map_setPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    map->data[x * map->width + y] = val | PLAYER_BITMASK;
+}
+
+int game_map_setObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    map->data[x * map->width + y] = val | OBSTACLE_BITMASK;
+}
+
+int game_map_setBox(struct game_map_t *map, unsigned int x, unsigned int y, unsigned short number, unsigned short duration)
+{
+    if (x >= map->width || y >= map->height || duration < 0 || duration > 15 || number < 1 || number > 3)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    map->data[x * map->width + y] = val | (number << BOX_LSB);
+    return 0;
+}
+
+int game_map_setDropoff(struct game_map_t *map, unsigned int x, unsigned int y, unsigned short number)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    map->data[x * map->width + y] = val | (number << DROPOFF_LSB);
+}
+
+int game_map_tick(struct game_map_t *map)
+{
+
 }
