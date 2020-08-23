@@ -53,3 +53,5 @@ dkms.conf
 
 # Project specific
 /libs
+/obj
+/bin
