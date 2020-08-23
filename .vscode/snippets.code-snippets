@@ -37,5 +37,39 @@
 			"*/"
 		],
 		"description": "Function documentation comment"
+	},
+	"New munit test": {
+		"prefix": "test",
+		"body": [
+			"MunitResult ${1:my_test}(const MunitParameter params[], void *data)",
+			"{",
+			"\t${0}",
+			"}"
+		],
+		"description": "Munit test"
+	},
+	"Array of tests": {
+		"prefix": "tarray",
+		"body": [
+			"MunitTest ${1:something}_tests[] =",
+			"{",
+			"\t{\"/${2:name}\", ${3:function}, ${4:setup}, ${5:teardown}, MUNIT_TEST_OPTION_NONE, ${6:parameters}}",
+			"\t{NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}",
+			"};${0}"
+		],
+		"description": "Array of munit tests"
+	},
+	"Munit test suite": {
+		"prefix": "suite",
+		"body": [
+			"const MunitSuite ${1:something}_suite =",
+			"{",
+			"\t\"/${2:name}\",",
+			"\t${3:testArray},",
+			"\t${4:NULL}, /* suites */",
+			"\t${5:1}, /* iterations */",
+			"\tMUNIT_SUITE_OPTION_NONE",
+			"};"
+		]
 	}
 }
