@@ -1,3 +1,6 @@
+#ifndef PLAYER_LIST_H
+#define PLAYER_LIST_H
+
 #include "player_alias.h"
 
 struct player_list_t;
@@ -66,3 +69,4 @@ void player_list_purge(struct player_list_t *list);
 * @param list The list to wait on
 */
 void player_list_waitOnEmpty(struct player_list_t *list);
+#endif

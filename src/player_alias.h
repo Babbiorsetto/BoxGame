@@ -1,3 +1,6 @@
+#ifndef PLAYER_ALIAS_H
+#define PLAYER_ALIAS_H
+
 #include <netinet/in.h>
 
 struct player_alias_t
@@ -11,3 +14,5 @@ struct player_alias_t
 struct player_alias_t *player_alias_create(char *username, struct sockaddr_in *address, int clientDescriptor);
 
 void player_alias_destroy(struct player_alias_t *alias);
+
+#endif
