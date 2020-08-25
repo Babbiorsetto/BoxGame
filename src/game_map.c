@@ -75,6 +75,26 @@ int game_map_destroy(struct game_map_t *map)
     return 0;
 }
 
+int game_map_getWidth(struct game_map_t *map)
+{
+    if (map == NULL)
+    {
+        return -1;
+    }
+    
+    return map->width;
+}
+
+int game_map_getHeight(struct game_map_t *map)
+{
+    if (map == NULL)
+    {
+        return -1;
+    }
+    
+    return map->height;
+}
+
 int game_map_hasPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
 {
     if (x >= map->width || y >= map->height)
@@ -98,6 +118,12 @@ int game_map_hasObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
     return (val & OBSTACLE_BITMASK) >> OBSTACLE_LSB;
 }
 
+/*
+* Signals whether the given square contains a box and the number of the box 
+* if there happens to be one. Internal use
+* 
+* @return 0 if there is no box, the box number otherwise
+*/
 int game_map_hasBox(struct game_map_t *map, unsigned int x, unsigned int y)
 {
     if (x >= map->width || y >= map->height)
@@ -109,6 +135,11 @@ int game_map_hasBox(struct game_map_t *map, unsigned int x, unsigned int y)
     return (val & BOX_BITMASK) >> BOX_LSB;
 }
 
+/*
+* Internal use
+* 
+* 
+*/
 int game_map_boxDuration(struct game_map_t *map, unsigned int x, unsigned int y)
 {
     if (x >= map->width || y >= map->height)
@@ -138,8 +169,31 @@ int game_map_setPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
         return -1;
     }
 
+    if (game_map_hasPlayer(map, x, y))
+    {
+        return 2;
+    }
+
+    if (game_map_hasObstacle(map, x, y))
+    {
+        return 3;
+    }    
+
     unsigned short val = map->data[x * map->width + y];
     map->data[x * map->width + y] = val | PLAYER_BITMASK;
+    return 1;
+}
+
+int game_map_unsetPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->width || y >= map->height)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    map->data[x * map->width + y] = val & ~(PLAYER_BITMASK);
+    return 0;
 }
 
 int game_map_setObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
@@ -155,13 +209,14 @@ int game_map_setObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
 
 int game_map_setBox(struct game_map_t *map, unsigned int x, unsigned int y, unsigned short number, unsigned short duration)
 {
-    if (x >= map->width || y >= map->height || duration < 0 || duration > 15 || number < 1 || number > 3)
+    if (x < 0 || x >= map->width || y < 0 || y >= map->height || duration < 0 || duration > 15 || number < 0 || number > 3)
     {
         return -1;
     }
 
     unsigned short val = map->data[x * map->width + y];
-    map->data[x * map->width + y] = val | (number << BOX_LSB);
+    val = val & (~(BOX_BITMASK | DURATION_BITMASK));
+    map->data[x * map->width + y] = val | (number << BOX_LSB) | (duration << DURATION_LSB); 
     return 0;
 }
 
@@ -179,4 +234,62 @@ int game_map_setDropoff(struct game_map_t *map, unsigned int x, unsigned int y, 
 int game_map_tick(struct game_map_t *map)
 {
 
+}
+
+int game_map_pickup(struct game_map_t *map, unsigned int x, unsigned int y, int *number, int *duration)
+{
+    if (map == NULL || x < 0 || x >= map->width || y < 0 || y >= map->height || number == NULL || duration == NULL)
+    {
+        return -1;
+    }
+    
+    if (game_map_hasBox(map, x, y) > 0)
+    {
+        *number = game_map_hasBox(map, x, y);
+        *duration= game_map_boxDuration(map, x, y);
+        game_map_setBox(map, x, y, 0, 0);
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+    
+    return -1;
+}
+
+int game_map_drop(struct game_map_t *map, unsigned int x, unsigned int y, int number, int duration)
+{
+    if (map == NULL || x < 0 || x >= map->width || y < 0 || y >= map->height)
+    {
+        return -1;
+    }
+    if (duration < 0 || duration > 15 || number < 0 || number > 3)
+    {
+        return -1;
+    }
+
+    if (game_map_hasBox(map, x, y))
+    {
+        return 4;
+    }
+
+    int dropN = game_map_hasDropoff(map, x, y);
+    if (dropN == number)
+    {
+        return 2;
+    }
+    else if (dropN == 0)
+    {
+        game_map_setBox(map, x, y, number, duration);
+        return 1;
+    }
+    // dropN == a valid dropoff but not the right one
+    else
+    {
+        return 3;
+    }
+    
+    return -1;
+    
 }
