@@ -7,7 +7,7 @@ int main(int argc, char *const argv[])
 
     MunitSuite test_suite =
     {
-        "/main",
+        "",
         NULL,
         all_suites,
         1,
