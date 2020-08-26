@@ -1,9 +1,10 @@
 #include "munit.h"
 #include "game_map_test.h"
+#include "player_list_test.h"
 
 int main(int argc, char *const argv[])
 {
-    MunitSuite all_suites[] = {game_map_suite, NULL};
+    MunitSuite all_suites[] = {game_map_suite, player_list_suite, NULL};
 
     MunitSuite test_suite =
     {
