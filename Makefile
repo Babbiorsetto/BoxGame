@@ -39,7 +39,7 @@ $(SERVER): $(OBJ)
 $(CLIENT):
 	$(CC) $(CCFLAG) -o $@ $^
 
-$(TEST): $(OBJ_PATH)/player_alias.o $(OBJ_PATH)/player_list.o $(OBJ_PATH)/game_map.o libs/munit/munit.c $(TESTSRC)
+$(TEST): $(OBJ_PATH)/player_alias.o $(OBJ_PATH)/player_list.o $(OBJ_PATH)/game_map.o $(OBJ_PATH)/personal_map.o libs/munit/munit.c $(TESTSRC)
 	$(CC) $(CCFLAG) $(TESTFLAG) -o $@ $^
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
