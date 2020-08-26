@@ -1,5 +1,7 @@
-#include "stdlib.h"
+#include <stdlib.h>
 #include "game_map.h"
+#include "personal_map.h"
+
 struct personal_map_t
 {
     char *data;
