@@ -50,8 +50,11 @@ int player_list_is_empty(struct player_list_t *list);
 
 /*
 * Appends the given player to the given player list.
-* @param list is the memory location that contains the list to which the player must be added, player is the memory location that contains the player that is going to be added to the list
-* @return 0 if the player is already in the list, 1 if the player is succesfully added to the list, -1 if the memory location of either the player or the list is NULL, -2 if the function cannot allocate enough memory for a player node
+* @param list is the memory location that contains the list to which the player must be added
+* @param player is the memory location that contains the player that is going to be added to the list
+* @return 0 if the player cannot be added because they are already in the list and active, 
+* 1 if the player is succesfully added or re-added to the list, 
+* -1 on error
 */
 int player_list_add(struct player_list_t *list, struct player_alias_t *player);
 

@@ -133,7 +133,7 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
     
     if ((newnode = malloc(sizeof(struct player_node_t))) == NULL)
     {
-        return -2;
+        return -1;
     }
     newnode->player = player;
     newnode->next = NULL;
@@ -154,9 +154,24 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
             // meanwhile if you find the player is already in
             if (strcmp(curr->player->username, player->username) == 0)
             {
-                pthread_mutex_unlock(list->lock);
-                free(newnode);
-                return 0;
+                // let them rejoin if they had left
+                if (curr->player->active == 0)
+                {
+                    pthread_mutex_unlock(list->lock);
+                    free(curr->player->address);
+                    player_alias_copyOver(curr->player, player);
+                    player_alias_destroy(player);
+                    free(newnode);
+                    return 1;
+                }
+                // or prevent them from joining if they were still active in game
+                else
+                {
+                    pthread_mutex_unlock(list->lock);
+                    free(newnode);
+                    return 0;
+                }
+                
             }
 
             curr = curr->next;
@@ -189,6 +204,7 @@ void player_list_purge(struct player_list_t *list)
                 if (curr == list->first)
                 {
                     list->first = list->first->next;
+                    free(curr->player->address);
                     player_alias_destroy(curr->player);
                     free(curr);
                     curr = list->first;
@@ -198,6 +214,7 @@ void player_list_purge(struct player_list_t *list)
                 else
                 {
                     prev->next = curr->next;
+                    free(curr->player->address);
                     player_alias_destroy(curr->player);
                     free(curr);
                     curr = prev->next;
@@ -211,6 +228,7 @@ void player_list_purge(struct player_list_t *list)
         // reached the last position
         if (!(curr->player->active))
         { //if the last player in the list is inactive, it will be removed
+            free(curr->player->address);
             player_alias_destroy(curr->player);
             free(curr);
             prev = NULL;

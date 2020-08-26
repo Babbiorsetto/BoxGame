@@ -40,7 +40,18 @@ struct player_alias_t *player_alias_create(char *username, struct sockaddr_in *a
 void player_alias_destroy(struct player_alias_t *alias)
 {
     free(alias->username);
-    //TODO should I really always free the address? It was allocated by someone else
-    free(alias->address);
+    personal_map_destroy(alias->map);
     free(alias);
+}
+
+int player_alias_copyOver(struct player_alias_t *dest, struct player_alias_t *src)
+{
+    if (dest == NULL || src == NULL)
+    {
+        return -1;
+    }
+    
+    dest->address = src->address;
+    dest->connection = src->connection;
+    return 0;
 }
