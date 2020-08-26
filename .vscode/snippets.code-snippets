@@ -53,7 +53,7 @@
 		"body": [
 			"MunitTest ${1:something}_tests[] =",
 			"{",
-			"\t{\"/${2:name}\", ${3:function}, ${4:setup}, ${5:teardown}, MUNIT_TEST_OPTION_NONE, ${6:parameters}}",
+			"\t{\"/${2:name}\", ${3:function}, ${4:setup}, ${5:teardown}, MUNIT_TEST_OPTION_NONE, ${6:parameters}},",
 			"\t{NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}",
 			"};${0}"
 		],
