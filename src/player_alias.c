@@ -22,7 +22,7 @@ struct player_alias_t *player_alias_create(char *username, struct sockaddr_in *a
     {
         free(alias->username);
         free(alias);
-        return -1;
+        return NULL;
     }
     
     alias->address = address;
