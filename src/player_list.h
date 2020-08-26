@@ -41,6 +41,15 @@ struct player_alias_t *player_list_iterator_next(struct player_list_iterator_t *
 int player_list_create(struct player_list_t **list);
 
 /*
+* Frees a player_list.
+* Does nothing yet. Implement it
+* TODO
+* @param name A parameter
+* @return A return
+*/
+int player_list_destroy(struct player_list_t *list);
+
+/*
 * Checks if the given player list is empty
 * 
 * @param list Memory location that contains the list that needs to be checked

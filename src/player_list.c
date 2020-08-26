@@ -121,6 +121,11 @@ int player_list_create(struct player_list_t **list)
     return 0;
 }
 
+int player_list_destroy(struct player_list_t *list)
+{
+
+}
+
 int player_list_add(struct player_list_t *list, struct player_alias_t *player)
 {
     struct player_node_t *curr = NULL;
