@@ -1,12 +1,12 @@
-client scrive 'i'(iscriviti)
+client scrive 'r'(registrati)
     client invia 'username size', 'username', 'password size', 'password'
     server risponde 't' e chiude la connessione e il thread
         client conferma all'utente l'iscrizione e termina
     server risponde 'f'
         client chiede ancora credenziali (prevedere un modo di uscire?)
-client scrive 'a'(accedi)
+client scrive 'l'(login)
     client invia 'username size', 'username', 'password size', 'password'
-    server risponde 't' e inserisce l'utente nel gioco, o reiserisce se era uscito
+    server risponde 't' e inserisce l'utente nel gioco, o reinserisce se era uscito
         client entra in loop di gioco
     server risponde 'f' perche' credenziali errate
         client chiede ancora credenziali (prevedere un modo di uscire?)
