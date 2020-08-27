@@ -24,6 +24,25 @@
             ],
             "preLaunchTask": "Build server debug",
             "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "gcc - debug client",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/debug/client",
+            "args": ["192.168.1.1", "9473"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build client debug",
+            "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
 }
