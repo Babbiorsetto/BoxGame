@@ -55,3 +55,5 @@ dkms.conf
 /libs
 /obj
 /bin
+userCredentials
+/debug

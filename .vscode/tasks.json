@@ -1,27 +1,79 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"label": "Build tests",
-			"type": "shell",
-			"command": "make",
-			"args": [
-				"bin/test"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"group": "build",
-			"problemMatcher": []
-		},
-		{
-			"label": "Run tests",
-			"type": "shell",
-			"command": "./bin/test",
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"group": "test"
-		}
-	]
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build tests",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "bin/test"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run tests",
+            "type": "shell",
+            "command": "./bin/test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "test"
+        },
+        {
+            "label": "Build server",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "bin/server"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build client",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "bin/client"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build server debug",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "debug/server"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build client debug",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "debug/client"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
 }

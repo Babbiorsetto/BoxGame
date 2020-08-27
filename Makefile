@@ -1,6 +1,6 @@
 # tool macros
 CC := gcc
-CCFLAG :=
+CCFLAG := -pthread
 DBGFLAG := -g
 CCOBJFLAG := $(CCFLAG) -c
 TESTFLAG := -Ilibs/munit -Isrc
@@ -16,14 +16,18 @@ TEST_PATH := test
 CLIENT := $(BIN_PATH)/client
 SERVER := $(BIN_PATH)/server
 TEST := $(BIN_PATH)/test
+SERVER_DEBUG := $(DBG_PATH)/server
+CLIENT_DEBUG := $(DBG_PATH)/client
 
 # src files & obj files
 SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 TESTSRC := $(foreach x, $(TEST_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
+OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 
 # clean files list
-DISTCLEAN_LIST := $(OBJ)
+DISTCLEAN_LIST := $(OBJ) \
+				  $(OBJ_DEBUG)
 CLEAN_LIST := $(CLIENT) \
 			  $(SERVER) \
 			  $(TEST) \
@@ -33,7 +37,7 @@ CLEAN_LIST := $(CLIENT) \
 default: none
 
 # non-phony targets
-$(SERVER): $(OBJ)
+$(SERVER): $(OBJ_PATH)/player_alias.o $(OBJ_PATH)/player_list.o $(OBJ_PATH)/game_map.o $(OBJ_PATH)/personal_map.o $(OBJ_PATH)/server.o
 	$(CC) $(CCFLAG) -o $@ $^
 
 $(CLIENT):
@@ -48,8 +52,11 @@ $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(CC) $(CCOBJFLAG) $(DBGFLAG) -o $@ $<
 
-$(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(CC) $(CCFLAG) $(DBGFLAG) $? -o $@
+$(SERVER_DEBUG): $(DBG_PATH)/player_alias.o $(DBG_PATH)/player_list.o $(DBG_PATH)/game_map.o $(DBG_PATH)/personal_map.o $(DBG_PATH)/server.o
+	$(CC) $(CCFLAG) $(DBGFLAG) $^ -o $@
+
+$(CLIENT_DEBUG): 
+	
 
 # phony rules
 .PHONY: none
