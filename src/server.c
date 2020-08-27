@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include "player_list.h"
 #include "player_alias.h"
+#include "game_map.h"
 
 /* macro definitions */
 #define ARGUMENT_NUMBER 2
@@ -20,13 +21,17 @@
 #define USER_FILE_CREATE_PERMISSIONS S_IRUSR | S_IWUSR
 #define USER_FILE_OFLAGS O_WRONLY | O_CREAT | O_APPEND
 
+#define GAME_TURNS 30
+#define MAP_WIDTH 7
+#define MAP_HEIGHT 7
+
 /* function declarations */
 void processArguments(int argc, char const **argv, struct sockaddr_in *address);
 void checkArgumentNumber(int argc, char const **argv);
 uint16_t extractPortNumber(char const **argv);
 int isInteger(char *string);
 void gameError(char const *functionName, char const *customMessage, int shouldExit, int exitStatus);
-void setupMemory(struct sockaddr_in *address, struct player_list_t *list);
+void setupMemory(struct sockaddr_in *address);
 struct sockaddr_in *makeNewAddress();
 void waitForConnections(struct sockaddr_in *address);
 pthread_t startGameThread();
@@ -41,6 +46,7 @@ struct connection_info{
 
 /* global */
 struct player_list_t *playerList;
+struct game_map_t *gameMap;
 int usersFile;
 pthread_mutex_t *fileLock;
 
@@ -49,7 +55,7 @@ int main(int argc, char const *argv[])
 
     struct sockaddr_in *serverAddress;
 
-    setupMemory(serverAddress, playerList);
+    setupMemory(serverAddress);
     processArguments(argc, argv, serverAddress);
     startGameThread();
     waitForConnections(serverAddress);
@@ -139,9 +145,9 @@ void gameError(char const *functionName, char const *customMessage, int shouldEx
 * - Maybe something else in the future
 *
 */
-void setupMemory(struct sockaddr_in *address, struct player_list_t *list)
+void setupMemory(struct sockaddr_in *address)
 {
-    int error = player_list_create(list);
+    int error = player_list_create(&playerList);
     if (error)
     {
         gameError("player_list_create", "cannot create player list", 1, 1);
@@ -170,6 +176,11 @@ void setupMemory(struct sockaddr_in *address, struct player_list_t *list)
         gameError("pthread_mutex_init", "cannot initialize file lock", 1, 1);
     }
     
+    error = game_map_create(&gameMap, MAP_WIDTH, MAP_HEIGHT);
+    if (error == -1)
+    {
+        gameError("game_map_create", "cannot create game map", 1, 1);
+    }
     
 }
 
@@ -284,15 +295,15 @@ void *handleConnection(void *data)
     struct connection_info *connectionInfo = (struct connection_info *)data;
     int clientDescriptor = connectionInfo->fd;
 
-    // read command, either 'i' or 'a'
-    error = read(clientDescriptor, &command, 1);
-    if (error != 1)
-    {
-        // TODO do what? what would this even mean?
-    }
     int again = 1;
     while (again)
     {
+        // read command, either 'i' or 'a'
+        error = read(clientDescriptor, &command, 1);
+        if (error != 1)
+        {
+            // TODO do what? what would this even mean?
+        }
         // read username length
         error = read(clientDescriptor, &receive, sizeof(int));
         if (error)
@@ -547,5 +558,241 @@ int readNBytes(int fileDescriptor, void *buffer, int nbytes)
 */
 void *game(void *arg)
 {
-    /*body*/
+    int error;
+    int shouldTurnAdvance;
+    int xCoord, yCoord;
+    int boxValue, boxDuration;
+    int turnsLeft;
+    struct player_alias_t *currentPlayer;
+    struct player_list_iterator_t *iterator;
+
+    /*TODO fill the game map with obstacles, dropoffs and the first boxes*/
+
+    player_list_waitOnEmpty(playerList);
+    error = player_list_iterator_create(playerList, iterator);
+    if (error)
+    {
+        //TODO
+    }
+
+    turnsLeft = GAME_TURNS;
+    while (turnsLeft > 0)
+    {
+        currentPlayer = player_list_iterator_next(iterator, &shouldTurnAdvance);
+        // current player is inactive, advance turn if needed but skip their action
+        if (!currentPlayer->active)
+        {
+            turnsLeft -= shouldTurnAdvance;
+            game_map_tick(gameMap);
+            player_list_tick(playerList);
+            continue;
+        }
+
+        char command = getCommand(currentPlayer);
+        switch (command)
+        {
+        case 'n':
+        case 's':
+        case 'e':
+        case 'o':
+            error = calculateMove(gameMap, command, currentPlayer->x, currentPlayer->y, &xCoord, &yCoord);
+            if (error == -1)
+            {
+                gameError("calculateMove", "wrong parameters", 1, 1);
+            }
+            
+            error = game_map_setPlayer(gameMap, xCoord, yCoord);
+            // player moves to new square
+            if (error == 1)
+            {
+                game_map_unsetPlayer(gameMap, currentPlayer->x, currentPlayer->y);
+                currentPlayer->x = xCoord;
+                currentPlayer->y = yCoord;
+            }
+            // player cannot move to new square due to there being a player
+            else if (error == 2)
+            {
+                sendMessage(currentPlayer, "");
+            }
+            // player cannot move to new square due to obstacle
+            else if (error == 3)
+            {
+                // reveal blocked square on player's map
+                personal_map_revealObstacle(currentPlayer->map, xCoord, yCoord);
+            }
+            break;
+        case 'p':
+            // player doesn't have a box, can pick up
+            if (currentPlayer->box == 0)
+            {
+                error = game_map_pickup(gameMap, currentPlayer->x, currentPlayer->y, &boxValue, &boxDuration);
+                // box was successfully picked up
+                if (error == 1)
+                {
+                    currentPlayer->box = boxValue;
+                    currentPlayer->duration = boxDuration;
+                    game_map_setBox(gameMap, currentPlayer->x, currentPlayer->y, 0, 0);
+                }
+                // there was no box to pick up
+                else if (error == 0)
+                {
+                    //TODO
+                }
+                // some kind of error
+                else
+                {
+                    //TODO
+                }
+            }
+            // player already had a box
+            else
+            {
+                //TODO
+                sendMessage(currentPlayer, "");
+            }
+            
+            break;
+        case 'd':
+            // player has a box to drop
+            if (currentPlayer->box != 0)
+            {
+                error = game_map_drop(gameMap, currentPlayer->x, currentPlayer->y, currentPlayer->box, currentPlayer->duration);
+                // box is dropped, one way or another
+                if (error >= 1 && error <= 3)
+                {
+                    currentPlayer->box = 0;
+                    currentPlayer->duration = 0;
+                }
+                // box cannot be dropped
+                else if (error == 4)
+                {
+                    sendMessage(currentPlayer, "");
+                }
+
+                // update score if box is turned in to dropoff
+                switch (error)
+                {
+                case 2:
+                    currentPlayer->points += 1;
+                    break;
+                case 3:
+                    currentPlayer->points -= 1;
+                    break;
+                default:
+                    break;
+                }
+            }
+            // player doesn't have any box
+            else
+            {
+                sendMessage(currentPlayer, "");
+            }
+            
+            break;
+        case 'q':
+            currentPlayer->active = 0;
+            close(currentPlayer->connection);
+            break;
+        default:
+            break;
+        }
+
+        //end of command, do what should happen after each player's move
+        /*TODO update everyone's map if this player moved
+        send everyone the state of the map*/
+
+        // it is also end turn
+        if (shouldTurnAdvance)
+        {
+            game_map_tick(gameMap);
+            player_list_tick(playerList);
+            turnsLeft -= 1;
+        }
+        
+    }
+
+    //end of game
+    /*TODO tally the scores and announce the winner
+    clear inactive players out of the list
+    */
+    
+}
+
+char getCommand(struct player_alias_t *player)
+{
+    int fd = player->connection;
+    int error;
+    char command;
+
+    error = read(fd, &command, 1);
+    if (error == 0)
+    {
+        //TODO
+    }
+    return command;
+    
+}
+
+/*
+* Calculates the destination square based on the starting square's coordinates 
+* and the move on given map. Destination square could still not be navigable, this 
+* only gives the coordinates where said move would take.
+* 
+* @param map The map on which the move is being made
+* @param move The char representing the move. 'n', 's', 'e', 'o'
+* @param x X coordinate of the moving player's starting square
+* @param y Y coordinate of the moving player's starting square
+* @param retX Memory location to store the resulting square's x coordinate
+* @param retY Memory location to store the resulting square's y coordinate
+* @return -1 in case of an error, invalid parameter
+*/
+int calculateMove(struct game_map_t *map, char move, int x, int y, int *retX, int *retY)
+{
+    if (map == NULL || x < 0 || x > game_map_getWidth(map) || y < 0 || y > game_map_getHeight(map) || retX == NULL || retY == NULL)
+    {
+        return -1;
+    }
+
+    switch (move)
+    {
+    case 'n':
+        y--;
+        if (y < 0)
+        {
+            y = game_map_getHeight(map) - 1;
+        }
+        break;
+    case 's':
+        y++;
+        if (y > game_map_getHeight(map) - 1)
+        {
+            y = 0;
+        }
+        break;
+    case 'e':
+        x++;
+        if (x > game_map_getWidth(map) - 1)
+        {
+            x = 0;
+        }
+        break;
+    case 'o':
+        x--;
+        if (x < 0)
+        {
+            x = game_map_getWidth(map) - 1;
+        }
+        break;
+    default:
+        return -1;
+        break;
+    }
+    *retX = x;
+    *retY = y;
+    return 0;
+}
+
+void sendMessage(struct player_alias_t *player, char *message)
+{
+    
 }
