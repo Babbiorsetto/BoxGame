@@ -10,6 +10,7 @@
 #include "player_list.h"
 #include "player_alias.h"
 #include "game_map.h"
+#include "personal_map.h"
 
 /* macro definitions */
 #define ARGUMENT_NUMBER 2
@@ -29,14 +30,21 @@
 void processArguments(int argc, char const **argv, struct sockaddr_in *address);
 void checkArgumentNumber(int argc, char const **argv);
 uint16_t extractPortNumber(char const **argv);
-int isInteger(char *string);
+int isInteger(const char *string);
 void gameError(char const *functionName, char const *customMessage, int shouldExit, int exitStatus);
-void setupMemory(struct sockaddr_in *address);
+void setupMemory(struct sockaddr_in **address);
 struct sockaddr_in *makeNewAddress();
+int readNBytes(int fileDescriptor, void *buffer, int nbytes);
+int checkCredentials(char *username, char *password);
+int isUsernamePresent(char *username);
+int insertUserCredentials(char *username, char *password);
 void waitForConnections(struct sockaddr_in *address);
 pthread_t startGameThread();
 void *handleConnection(void *data);
 void *game(void *arg);
+char getCommand(struct player_alias_t *player);
+int calculateMove(struct game_map_t *map, char move, int x, int y, int *retX, int *retY);
+void sendMessage(struct player_alias_t *player, char *message);
 
 /**/
 struct connection_info{
@@ -55,7 +63,7 @@ int main(int argc, char const *argv[])
 
     struct sockaddr_in *serverAddress;
 
-    setupMemory(serverAddress);
+    setupMemory(&serverAddress);
     processArguments(argc, argv, serverAddress);
     startGameThread();
     waitForConnections(serverAddress);
@@ -95,7 +103,7 @@ uint16_t extractPortNumber(char const **argv)
     return (uint16_t)numero;
 }
 
-int isInteger(char *string)
+int isInteger(const char *string)
 {
     int x = 0;
     int len = strlen(string);
@@ -145,7 +153,7 @@ void gameError(char const *functionName, char const *customMessage, int shouldEx
 * - Maybe something else in the future
 *
 */
-void setupMemory(struct sockaddr_in *address)
+void setupMemory(struct sockaddr_in **address)
 {
     int error = player_list_create(&playerList);
     if (error)
@@ -153,8 +161,8 @@ void setupMemory(struct sockaddr_in *address)
         gameError("player_list_create", "cannot create player list", 1, 1);
     }
 
-    address = makeNewAddress();
-    if (address == NULL)
+    *address = makeNewAddress();
+    if (*address == NULL)
     {
         gameError("makeNewAddress", "cannot allocate server address", 1, 1);
     }
@@ -199,7 +207,7 @@ pthread_t startGameThread()
     int error;
     pthread_t newId;
 
-    error = pthread_create(newId, NULL, game, NULL);
+    error = pthread_create(&newId, NULL, game, NULL);
     if (error)
     {
         gameError("pthread_create", "cannot create game thread", 1, 1);
@@ -217,8 +225,9 @@ pthread_t startGameThread()
 void waitForConnections(struct sockaddr_in *address)
 {
     int addrLen;
-    struct sockaddr_in *address;
+    struct sockaddr_in *clientAddressP;
     pthread_attr_t threadAttributes;
+    pthread_t id;
     struct connection_info *connectionInfo;
 
     int socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
@@ -227,7 +236,7 @@ void waitForConnections(struct sockaddr_in *address)
         gameError("socket", "cannot create socket", 1, 1);
     }
     
-    int error = bind(socketDescriptor, address, sizeof(struct sockaddr_in));
+    int error = bind(socketDescriptor, (struct sockaddr *)address, sizeof(struct sockaddr_in));
     if (error)
     {
         gameError("bind", "cannot bind address to socket", 1, 1);
@@ -252,13 +261,13 @@ void waitForConnections(struct sockaddr_in *address)
     
     while (1)
     {
-        address = makeNewAddress();
-        if (address == NULL)
+        clientAddressP = makeNewAddress();
+        if (clientAddressP == NULL)
         {
             gameError("makeNewAddress", "cannot allocate client address", 1, 1);
         }
         addrLen = sizeof(struct sockaddr_in);
-        error = accept(socketDescriptor, address, &addrLen);
+        error = accept(socketDescriptor, (struct sockaddr *)clientAddressP, &addrLen);
         if (error == -1)
         {
             gameError("accept", "cannot accept new connection", 1, 1);
@@ -268,10 +277,9 @@ void waitForConnections(struct sockaddr_in *address)
         {
             gameError("malloc", "cannot allocate connection_info struct", 1, 1);
         }
-        connectionInfo->address = address;
+        connectionInfo->address = clientAddressP;
         connectionInfo->fd = error;
-        pthread_create(NULL, &threadAttributes, handleConnection, connectionInfo);
-        
+        pthread_create(&id, &threadAttributes, handleConnection, connectionInfo);
     }
     
 }
@@ -340,7 +348,7 @@ void *handleConnection(void *data)
             if (checkCredentials(username, password))
             {
                 pthread_mutex_unlock(fileLock);
-                struct player_alias_t *alias = player_alias_create(username, connectionInfo->address, clientDescriptor);
+                struct player_alias_t *alias = player_alias_create(username, connectionInfo->address, clientDescriptor, gameMap);
                 if (alias == NULL)
                 {
                     //TODO this is a really bad situation. System must be out of memory 
@@ -351,7 +359,7 @@ void *handleConnection(void *data)
                 {
                     response = 'a';
                     player_alias_destroy(alias);
-                    write(clientDescriptor, response, 1);
+                    write(clientDescriptor, &response, 1);
                 }
                 // they are added
                 else
@@ -359,7 +367,7 @@ void *handleConnection(void *data)
                     response = 't';
                     free(connectionInfo);
                     again = 0;
-                    write(clientDescriptor, response, 1);
+                    write(clientDescriptor, &response, 1);
                 }
                 
             }
@@ -367,7 +375,7 @@ void *handleConnection(void *data)
             {
                 pthread_mutex_unlock(fileLock);
                 response = 'f';
-                write(clientDescriptor, response, 1);
+                write(clientDescriptor, &response, 1);
             }
             
             
@@ -381,7 +389,7 @@ void *handleConnection(void *data)
                 insertUserCredentials(username, password);
                 pthread_mutex_unlock(fileLock);
                 response = 't';
-                write(clientDescriptor, response, 1);
+                write(clientDescriptor, &response, 1);
                 close(clientDescriptor);
                 free(connectionInfo->address);
                 free(connectionInfo);
@@ -392,7 +400,7 @@ void *handleConnection(void *data)
             {
                 pthread_mutex_unlock(fileLock);
                 response = 'f';
-                write(clientDescriptor, response, 1);
+                write(clientDescriptor, &response, 1);
             }
             break;
         default:
@@ -794,5 +802,5 @@ int calculateMove(struct game_map_t *map, char move, int x, int y, int *retX, in
 
 void sendMessage(struct player_alias_t *player, char *message)
 {
-    
+    //TODO
 }
