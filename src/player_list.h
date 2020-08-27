@@ -82,4 +82,6 @@ void player_list_purge(struct player_list_t *list);
 */
 void player_list_waitOnEmpty(struct player_list_t *list);
 
+void player_list_tick(struct player_list_t *list);
+
 #endif

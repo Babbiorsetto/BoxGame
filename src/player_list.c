@@ -252,3 +252,8 @@ void player_list_waitOnEmpty(struct player_list_t *list)
     }
     pthread_mutex_unlock(list->lock);
 }
+
+void player_list_tick(struct player_list_t *list)
+{
+    //TODO
+}

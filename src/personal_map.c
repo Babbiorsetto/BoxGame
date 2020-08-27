@@ -42,3 +42,8 @@ int personal_map_destroy(struct personal_map_t *map)
     free(map);
     return 0;
 }
+
+void personal_map_revealObstacle(struct personal_map_t *map, int x, int y)
+{
+    //TODO
+}
