@@ -40,7 +40,7 @@ default: none
 $(SERVER): $(OBJ_PATH)/player_alias.o $(OBJ_PATH)/player_list.o $(OBJ_PATH)/game_map.o $(OBJ_PATH)/personal_map.o $(OBJ_PATH)/server.o
 	$(CC) $(CCFLAG) -o $@ $^
 
-$(CLIENT):
+$(CLIENT): $(OBJ_PATH)/client.o
 	$(CC) $(CCFLAG) -o $@ $^
 
 $(TEST): $(OBJ_PATH)/player_alias.o $(OBJ_PATH)/player_list.o $(OBJ_PATH)/game_map.o $(OBJ_PATH)/personal_map.o libs/munit/munit.c $(TESTSRC)
@@ -55,8 +55,8 @@ $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
 $(SERVER_DEBUG): $(DBG_PATH)/player_alias.o $(DBG_PATH)/player_list.o $(DBG_PATH)/game_map.o $(DBG_PATH)/personal_map.o $(DBG_PATH)/server.o
 	$(CC) $(CCFLAG) $(DBGFLAG) $^ -o $@
 
-$(CLIENT_DEBUG): 
-	
+$(CLIENT_DEBUG): $(DBG_PATH)/client.o
+	$(CC) $(CCFLAG) $(DBGFLAG) $^ -o $@	
 
 # phony rules
 .PHONY: none

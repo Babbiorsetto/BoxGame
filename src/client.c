@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <ctype.h>
+
 
 /* macro definitions */
 #define USERNAME_SIZE 30
@@ -14,15 +17,26 @@
 /* Global variables */
 int socketDescriptor = 0;
 
-int main()
-{
-	struct sockaddr_in *address;
+/* Forward declarations */
+void game(int socketDescriptor);
+void connection(int *socketDescriptor, struct sockaddr_in *address);
+void userQuery(int socketDescriptor);
+void checkSocketError(ssize_t error, int sockDescriptor);
+void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint16_t numeroPorta);
+uint16_t getVeroPortNumber(char *argomento);
+void checkArgs(int argc, const char *argv[]);
+int isInteger(char *string);
 
-	checkArgs(argc, argv[0], argv[1]);
-	preparaIndirizzo(&address, argv[0], argv[1]);
-	connection(&socketDescriptor);
+int main(int argc, const char *argv[])
+{
+	struct sockaddr_in *address = malloc(sizeof(struct sockaddr_in));
+
+
+	checkArgs(argc, argv);
+	preparaIndirizzo(address, argv[1], argv[2]);
+	connection(&socketDescriptor, address);
 	userQuery(socketDescriptor);
-	game(socketDescriptor);
+	//game(socketDescriptor);
 }
 
 void game(int socketDescriptor)
@@ -31,14 +45,15 @@ void game(int socketDescriptor)
 	read(socketDescriptor, &message, 1);
 }
 
-int connection(int *socketDescriptor)
+void connection(int *socketDescriptor, struct sockaddr_in *address)
 {
+	struct sockaddr *addr = address;
 	int connError = 0;
 	*socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
-	connError = connect(*socketDescriptor, &address, sizeof(address));
+	connError = connect(*socketDescriptor, addr, sizeof(address));
 	if (connError != 0)
 	{
-		fprint(stderr, "Could not connect on socket.\n");
+		fprintf(stderr, "Could not connect on socket.\n");
 		close(*socketDescriptor);
 		exit(1);
 	}
@@ -59,7 +74,7 @@ void userQuery(int socketDescriptor)
 	while(!connected)
 	{
 		printf("Insert username (max %d characters, 'q' to exit):\n", USERNAME_SIZE-1);
-		scanf("%s\n", &username);
+		scanf("%s\n", username);
 
 		if(strcmp(username, "q") == 0)
 		{
@@ -68,15 +83,15 @@ void userQuery(int socketDescriptor)
 		}
 
 		printf("Insert password (max %d characters):\n", PASSWORD_SIZE-1);
-		scanf("%s\n", &password);
+		scanf("%s\n", password);
 
-		error = send(socketDescriptor, &command, 1, NULL);
+		error = write(socketDescriptor, &command, 1);
 		checkSocketError(error, socketDescriptor);
 
-		error = send(socketDescriptor, username, 30, NULL);
+		error = write(socketDescriptor, username, 30);
 		checkSocketError(error, socketDescriptor);
 
-		error = send(socketDescriptor, password, 30, NULL);
+		error = write(socketDescriptor, password, 30);
 		checkSocketError(error, socketDescriptor);
 		
 		error = read(socketDescriptor, &response, 1);
@@ -109,7 +124,7 @@ void checkSocketError(ssize_t error, int sockDescriptor)
 	}
 }
 
-void preparaIndirizzo(struct sockaddr_in *indirizzo, char *stringaIP, uint16_t numeroPorta)
+void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint16_t numeroPorta)
 {
 	int errore;
 	memset(indirizzo, 0, sizeof(struct sockaddr_in));
@@ -139,9 +154,9 @@ uint16_t getVeroPortNumber(char *argomento)
 	return (uint16_t)numero;
 }
 
-void checkArgs(int argc, char *address, int port)
+void checkArgs(int argc, const char *argv[])
 {
-	if (argc != 2)
+	if (argc != 3)
 	{
 		fprintf(stderr, "Invalid arguments. First argument must be the server address and second must be the port.\n");
 		exit(1);
