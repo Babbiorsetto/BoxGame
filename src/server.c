@@ -34,7 +34,7 @@ int isInteger(const char *string);
 void gameError(char const *functionName, char const *customMessage, int shouldExit, int exitStatus);
 void setupMemory(struct sockaddr_in **address);
 struct sockaddr_in *makeNewAddress();
-int readNBytes(int fileDescriptor, void *buffer, int nbytes);
+int readNBytes(int fileDescriptor, void *buffer, int nBytes);
 int checkCredentials(char *username, char *password);
 int isUsernamePresent(char *username);
 int insertUserCredentials(char *username, char *password);
@@ -45,6 +45,7 @@ void *game(void *arg);
 char getCommand(struct player_alias_t *player);
 int calculateMove(struct game_map_t *map, char move, int x, int y, int *retX, int *retY);
 void sendMessage(struct player_alias_t *player, char *message);
+int writeNBytes(int fileDescriptor, void *buffer, int nBytes);
 
 /**/
 struct connection_info{
@@ -307,13 +308,13 @@ void *handleConnection(void *data)
     while (again)
     {
         // read command, either 'i' or 'a'
-        error = read(clientDescriptor, &command, 1);
+        error = readNBytes(clientDescriptor, &command, 1);
         if (error != 1)
         {
             // TODO do what? what would this even mean?
         }
         // read username length
-        error = read(clientDescriptor, &receive, sizeof(int));
+        error = readNBytes(clientDescriptor, &receive, sizeof(int));
         if (error)
         {
             //TODO
@@ -326,7 +327,7 @@ void *handleConnection(void *data)
             //TODO
         }
         // read password length
-        error = read(clientDescriptor, &receive, sizeof(int));
+        error = readNBytes(clientDescriptor, &receive, sizeof(int));
         if (error)
         {
             //TODO
@@ -359,7 +360,7 @@ void *handleConnection(void *data)
                 {
                     response = 'a';
                     player_alias_destroy(alias);
-                    write(clientDescriptor, &response, 1);
+                    writeNBytes(clientDescriptor, &response, 1);
                 }
                 // they are added
                 else
@@ -367,7 +368,7 @@ void *handleConnection(void *data)
                     response = 't';
                     free(connectionInfo);
                     again = 0;
-                    write(clientDescriptor, &response, 1);
+                    writeNBytes(clientDescriptor, &response, 1);
                 }
                 
             }
@@ -375,7 +376,7 @@ void *handleConnection(void *data)
             {
                 pthread_mutex_unlock(fileLock);
                 response = 'f';
-                write(clientDescriptor, &response, 1);
+                writeNBytes(clientDescriptor, &response, 1);
             }
             
             
@@ -389,7 +390,7 @@ void *handleConnection(void *data)
                 insertUserCredentials(username, password);
                 pthread_mutex_unlock(fileLock);
                 response = 't';
-                write(clientDescriptor, &response, 1);
+                writeNBytes(clientDescriptor, &response, 1);
                 close(clientDescriptor);
                 free(connectionInfo->address);
                 free(connectionInfo);
@@ -400,7 +401,7 @@ void *handleConnection(void *data)
             {
                 pthread_mutex_unlock(fileLock);
                 response = 'f';
-                write(clientDescriptor, &response, 1);
+                writeNBytes(clientDescriptor, &response, 1);
             }
             break;
         default:
@@ -539,21 +540,26 @@ int checkCredentials(char *username, char *password)
 * To be reasonably sure that n bytes were actually read into buffer
 * TODO
 */
-int readNBytes(int fileDescriptor, void *buffer, int nbytes)
+int readNBytes(int fileDescriptor, void *buffer, int nBytes)
 {
-    int error;
-    int remaining = nbytes;
-    while (remaining)
+    ssize_t error;
+    ssize_t totalBytesRead = 0;
+    while (totalBytesRead < nBytes)
     {
-        error = read(fileDescriptor, buffer + (nbytes - remaining), remaining);
-        if (error == -1 || error == 0)
+        error = read(fileDescriptor, buffer + totalBytesRead, nBytes - totalBytesRead);
+        if (error == -1)
         {
             return -1;
         }
-        remaining -= error;
+        if (error == 0)
+        {
+            return 0;
+        }
+        
+        totalBytesRead += error;
     }
     
-    return nbytes;
+    return nBytes;
 }
 
 /*Here be game*/
@@ -732,7 +738,7 @@ char getCommand(struct player_alias_t *player)
     int error;
     char command;
 
-    error = read(fd, &command, 1);
+    error = readNBytes(fd, &command, 1);
     if (error == 0)
     {
         //TODO
@@ -802,5 +808,47 @@ int calculateMove(struct game_map_t *map, char move, int x, int y, int *retX, in
 
 void sendMessage(struct player_alias_t *player, char *message)
 {
-    //TODO
+    char command = 's';
+    int length = strlen(message) + 1;
+    int messageLengthNetworkOrder = htonl(length);
+    int error;
+
+    error = writeNBytes(player->connection, &command, 1);
+    if (error == -1)
+    {
+        //TODO
+    }
+    
+    error = writeNBytes(player->connection, &messageLengthNetworkOrder, sizeof(int));
+    if (error == -1)
+    {
+        //TODO
+    }
+    
+    error = writeNBytes(player->connection, message, length);
+    if (error == -1)
+    {
+        //TODO
+    }
+    
+
+    return;
+}
+
+int writeNBytes(int fileDescriptor, void *buffer, int nBytes)
+{
+    ssize_t error;
+    ssize_t totalBytesWritten = 0;
+    while (totalBytesWritten < nBytes)
+    {
+        error = write(fileDescriptor, buffer + totalBytesWritten, nBytes - totalBytesWritten);
+        if (error == -1)
+        {
+            return -1;
+        }
+
+        totalBytesWritten += error;
+    }
+
+    return nBytes;
 }
