@@ -25,6 +25,10 @@ int game_map_hasPlayer(struct game_map_t *map, unsigned int x, unsigned int y);
 
 int game_map_hasObstacle(struct game_map_t *map, unsigned int x, unsigned int y);
 
+int game_map_hasDropoff(struct game_map_t *map, unsigned int x, unsigned int y);
+
+int game_map_hasBox(struct game_map_t *map, unsigned int x, unsigned int y);
+
 /*
 * Sets the given square to contain a player, if it can according to the rules. 
 * A square cannot be set to contain a player if 
