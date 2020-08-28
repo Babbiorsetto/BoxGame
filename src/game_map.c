@@ -97,7 +97,7 @@ int game_map_getHeight(struct game_map_t *map)
 
 int game_map_hasPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -109,7 +109,7 @@ int game_map_hasPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
 
 int game_map_hasObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -126,7 +126,7 @@ int game_map_hasObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
 */
 int game_map_hasBox(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -142,7 +142,7 @@ int game_map_hasBox(struct game_map_t *map, unsigned int x, unsigned int y)
 */
 int game_map_boxDuration(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -153,7 +153,7 @@ int game_map_boxDuration(struct game_map_t *map, unsigned int x, unsigned int y)
 
 int game_map_hasDropoff(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -164,7 +164,7 @@ int game_map_hasDropoff(struct game_map_t *map, unsigned int x, unsigned int y)
 
 int game_map_setPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -186,7 +186,7 @@ int game_map_setPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
 
 int game_map_unsetPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -198,7 +198,7 @@ int game_map_unsetPlayer(struct game_map_t *map, unsigned int x, unsigned int y)
 
 int game_map_setObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -209,7 +209,7 @@ int game_map_setObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
 
 int game_map_setBox(struct game_map_t *map, unsigned int x, unsigned int y, unsigned short number, unsigned short duration)
 {
-    if (x < 0 || x >= map->width || y < 0 || y >= map->height || duration < 0 || duration > 15 || number < 0 || number > 3)
+    if (x < 0 || x >= map->height || y < 0 || y >= map->width || duration < 0 || duration > 15 || number < 0 || number > 3)
     {
         return -1;
     }
@@ -222,7 +222,7 @@ int game_map_setBox(struct game_map_t *map, unsigned int x, unsigned int y, unsi
 
 int game_map_setDropoff(struct game_map_t *map, unsigned int x, unsigned int y, unsigned short number)
 {
-    if (x >= map->width || y >= map->height)
+    if (x >= map->height || y >= map->width)
     {
         return -1;
     }
@@ -238,7 +238,7 @@ int game_map_tick(struct game_map_t *map)
 
 int game_map_pickup(struct game_map_t *map, unsigned int x, unsigned int y, int *number, int *duration)
 {
-    if (map == NULL || x < 0 || x >= map->width || y < 0 || y >= map->height || number == NULL || duration == NULL)
+    if (map == NULL || x < 0 || x >= map->height || y < 0 || y >= map->width || number == NULL || duration == NULL)
     {
         return -1;
     }
@@ -260,7 +260,7 @@ int game_map_pickup(struct game_map_t *map, unsigned int x, unsigned int y, int 
 
 int game_map_drop(struct game_map_t *map, unsigned int x, unsigned int y, int number, int duration)
 {
-    if (map == NULL || x < 0 || x >= map->width || y < 0 || y >= map->height)
+    if (map == NULL || x < 0 || x >= map->height || y < 0 || y >= map->width)
     {
         return -1;
     }
