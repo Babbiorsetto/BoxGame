@@ -69,6 +69,7 @@ MunitResult game_map_create_test(const MunitParameter params[], void *data)
 {
     struct game_map_t *map;
     const int width = 15, height = 3;
+    int i, j;
     int error = game_map_create(&map, width, height);
     if (error == -1)
     {
@@ -77,7 +78,18 @@ MunitResult game_map_create_test(const MunitParameter params[], void *data)
     munit_assert_not_null(map);
     munit_assert_int(game_map_getWidth(map), ==, width);
     munit_assert_int(game_map_getHeight(map), ==, height);
-
+    for (i = 0; i < height; i++)
+    {
+        for (j = 0; i < width; i++)
+        {
+            munit_assert_int(game_map_hasPlayer(map, i, j), ==, 0);
+            munit_assert_int(game_map_hasBox(map, i, j), ==, 0);
+            munit_assert_int(game_map_hasObstacle(map, i, j), ==, 0);
+            munit_assert_int(game_map_hasDropoff(map, i, j), ==, 0);
+        }
+        
+    }
+    
     game_map_destroy(map);
     return MUNIT_OK;
 }
