@@ -583,7 +583,7 @@ void *game(void *arg)
     /*TODO fill the game map with obstacles, dropoffs and the first boxes*/
 
     player_list_waitOnEmpty(playerList);
-    error = player_list_iterator_create(playerList, iterator);
+    error = player_list_iterator_create(playerList, &iterator);
     if (error)
     {
         //TODO
