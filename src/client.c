@@ -9,10 +9,10 @@
 #include <arpa/inet.h>
 #include <ctype.h>
 
-
 /* macro definitions */
 #define USERNAME_SIZE 30
 #define PASSWORD_SIZE 30
+#define PORT_NUMBER_POSITION 2
 
 /* Global variables */
 int socketDescriptor = 0;
@@ -22,23 +22,45 @@ void game(int socketDescriptor);
 void connection(int *socketDescriptor, struct sockaddr_in *address);
 void userQuery(int socketDescriptor);
 void checkSocketError(ssize_t error, int sockDescriptor);
+uint16_t extractPortNumber(const char **argv);
+void checkArgumentNumber(int argc);
+int isInteger(const char *string);
+void bufferToString(char *buffer, char *string);
 void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint16_t numeroPorta);
-uint16_t getVeroPortNumber(char *argomento);
-void checkArgs(int argc, const char *argv[]);
-int isInteger(char *string);
+void clearBuffer(void);
 
 int main(int argc, const char *argv[])
 {
-	struct sockaddr_in *address = malloc(sizeof(struct sockaddr_in));
+	struct sockaddr_in address;
 
-
-	checkArgs(argc, argv);
-	preparaIndirizzo(address, argv[1], argv[2]);
-	connection(&socketDescriptor, address);
+	preparaIndirizzo(&address, argv[1], extractPortNumber(argv));
+	connection(&socketDescriptor, &address);
 	userQuery(socketDescriptor);
 	//game(socketDescriptor);
 }
 
+void checkArgumentNumber(int argc)
+{
+	if (argc != 3)
+	{
+		fprintf(stderr, "Invalid arguments. First argument must be the server address and second must be the port.\n");
+		exit(1);
+	}
+}
+
+void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint16_t numeroPorta)
+{
+	int errore;
+	memset(indirizzo, 0, sizeof(struct sockaddr_in));
+	indirizzo->sin_family = AF_INET;
+	indirizzo->sin_port = htons(numeroPorta);
+	errore = inet_pton(AF_INET, stringaIP, &(indirizzo->sin_addr));
+	if (errore == 0)
+	{
+		fprintf(stderr, "Incorrect address format.\n");
+		exit(1);
+	}
+}
 void game(int socketDescriptor)
 {	
 	char message;
@@ -47,12 +69,18 @@ void game(int socketDescriptor)
 
 void connection(int *socketDescriptor, struct sockaddr_in *address)
 {
-	struct sockaddr *addr = address;
+	struct sockaddr *addr = (struct sockaddr *) address;
 	int connError = 0;
 	*socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
-	connError = connect(*socketDescriptor, addr, sizeof(address));
+	if((*socketDescriptor) == -1)
+	{
+		perror("Socket creation error");
+		exit(1);
+	}
+	connError = connect((*socketDescriptor), addr, (socklen_t) sizeof(struct sockaddr));
 	if (connError != 0)
 	{
+		perror("Socket connection error");
 		fprintf(stderr, "Could not connect on socket.\n");
 		close(*socketDescriptor);
 		exit(1);
@@ -63,35 +91,58 @@ void userQuery(int socketDescriptor)
 {
 	char username[USERNAME_SIZE];
 	char password[PASSWORD_SIZE];
-	char buffer[60];
+	char buffer[100];
 	char command, response;
-	int connected = 0;
+	int connected = 0, commandValid = 0;
+	int stringSize = (int) htonl(USERNAME_SIZE);
 	ssize_t error;
 
-	printf("Would you like to register ('r') or login ('l') ?\n");
-	scanf("%c\n", &command);
+	while(!commandValid)
+	{
+		printf("Would you like to register ('r') or login ('l') ?\n");
+		command = getchar();
+		clearBuffer();
+
+		if(command == 'r' || command == 'l')
+			commandValid = 1;
+		else
+			printf("Not a valid command.\n");
+
+	}
 
 	while(!connected)
 	{
 		printf("Insert username (max %d characters, 'q' to exit):\n", USERNAME_SIZE-1);
-		scanf("%s\n", username);
+		scanf("%s", buffer);
+
+		bufferToString(buffer, username);
 
 		if(strcmp(username, "q") == 0)
 		{
+			error = write(socketDescriptor, username, 1);
+			checkSocketError(error, socketDescriptor);
 			close(socketDescriptor);
-			exit(1);
+			exit(0);
 		}
 
 		printf("Insert password (max %d characters):\n", PASSWORD_SIZE-1);
-		scanf("%s\n", password);
+		scanf("%s", buffer);
+
+		bufferToString(buffer, password);
 
 		error = write(socketDescriptor, &command, 1);
 		checkSocketError(error, socketDescriptor);
 
-		error = write(socketDescriptor, username, 30);
+		error = write(socketDescriptor, &stringSize, 4);
 		checkSocketError(error, socketDescriptor);
 
-		error = write(socketDescriptor, password, 30);
+		error = write(socketDescriptor, username, USERNAME_SIZE);
+		checkSocketError(error, socketDescriptor);
+
+		error = write(socketDescriptor, &stringSize, 4);
+		checkSocketError(error, socketDescriptor);
+
+		error = write(socketDescriptor, password, PASSWORD_SIZE);
 		checkSocketError(error, socketDescriptor);
 		
 		error = read(socketDescriptor, &response, 1);
@@ -114,6 +165,22 @@ void userQuery(int socketDescriptor)
 	return;
 }
 
+void clearBuffer(void)
+{    
+  while ( getchar() != '\n' );
+}
+
+void bufferToString(char *buffer, char *string)
+{
+	int i = 0;
+	for(i = 0; i < 29 && buffer[i] != '\0'; i++)
+	{
+		string[i] = buffer[i];
+	}
+	string[i] = '\0';
+	return;
+}
+
 void checkSocketError(ssize_t error, int sockDescriptor)
 {
 	if (error == -1)
@@ -124,46 +191,21 @@ void checkSocketError(ssize_t error, int sockDescriptor)
 	}
 }
 
-void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint16_t numeroPorta)
+uint16_t extractPortNumber(const char **argv)
 {
-	int errore;
-	memset(indirizzo, 0, sizeof(struct sockaddr_in));
-	indirizzo->sin_family = AF_INET;
-	indirizzo->sin_port = htons(numeroPorta);
-	errore = inet_pton(AF_INET, stringaIP, &(indirizzo->sin_addr));
-	if (errore == 0)
-	{
-		fprintf(stderr, "Incorrect address format.\n");
-		exit(1);
-	}
+    if (!isInteger(argv[PORT_NUMBER_POSITION]))
+    {
+        fprintf(stderr, "Port number should be an integer\n");
+    }
+
+    int numero = atoi(argv[PORT_NUMBER_POSITION]);
+    if (numero < 1 || numero > 65535) {
+        fprintf(stderr, "Port number is out of range (1-65535)\n");
+    }
+    return (uint16_t)numero;
 }
 
-uint16_t getVeroPortNumber(char *argomento)
-{
-	if (!isInteger(argomento))
-	{
-		fprintf(stderr, "Port number not valid.\n");
-		exit(1);
-	}
-	int numero = atoi(argomento);
-	if (numero < 1 || numero > 65535)
-	{
-		fprintf(stderr, "Port number not valid. (1-65535)\n");
-		exit(1);
-	}
-	return (uint16_t)numero;
-}
-
-void checkArgs(int argc, const char *argv[])
-{
-	if (argc != 3)
-	{
-		fprintf(stderr, "Invalid arguments. First argument must be the server address and second must be the port.\n");
-		exit(1);
-	}
-}
-
-int isInteger(char *string)
+int isInteger(const char *string)
 {
 	int x = 0;
 	int len = strlen(string);
