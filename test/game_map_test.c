@@ -80,7 +80,7 @@ MunitResult game_map_create_test(const MunitParameter params[], void *data)
     munit_assert_int(game_map_getHeight(map), ==, height);
     for (i = 0; i < height; i++)
     {
-        for (j = 0; i < width; i++)
+        for (j = 0; j < width; j++)
         {
             munit_assert_int(game_map_hasPlayer(map, i, j), ==, 0);
             munit_assert_int(game_map_hasBox(map, i, j), ==, 0);
