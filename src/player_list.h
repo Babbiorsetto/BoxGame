@@ -13,7 +13,7 @@ struct player_list_iterator_t;
 * @param iterator Memory location that will contain the new iterator, if the call to create succeded
 * @return 0 if the iterator was created successfully, non-zero otherwise (specifically, -1 if the function cannot allocate enough memory for the iterator, -2 if the player list is empty)
 */
-int player_list_iterator_create(struct player_list_t *list, struct player_list_iterator_t *iterator);
+int player_list_iterator_create(struct player_list_t *list, struct player_list_iterator_t **iterator);
 
 /*
 * Frees the memory used by the given iterator.

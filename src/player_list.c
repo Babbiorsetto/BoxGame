@@ -32,23 +32,26 @@ int player_list_is_empty(struct player_list_t *list)
     return check;
 }
 
-int player_list_iterator_create(struct player_list_t *list, struct player_list_iterator_t *iterator)
+int player_list_iterator_create(struct player_list_t *list, struct player_list_iterator_t **iterator)
 {
-    if ((iterator = malloc(sizeof(struct player_list_iterator_t))) == NULL)
+    if ((*iterator = malloc(sizeof(struct player_list_iterator_t))) == NULL)
         return -1;
 
     else
     {
-        iterator->list = list;
-        if (!(player_list_is_empty(list)))
-        { //if the list is empty, the iterator will be freed
-            iterator->current = iterator->list->first;
-        }
-        else
+        pthread_mutex_lock(list->lock);
+        (*iterator)->list = list;
+        if (list->first != NULL)
+        { 
+            (*iterator)->current = (*iterator)->list->first;
+        } 
+        //if the list is empty, the iterator will be freed
+        else    
         {
-            free(iterator);
+            free(*iterator);
             return -2;
         }
+        pthread_mutex_unlock(list->lock);
         return 0;
     }
 }
