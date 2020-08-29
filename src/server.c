@@ -342,11 +342,11 @@ void *handleConnection(void *data)
         
         switch (command)
         {
-        case 'a':
+        case 'l':
             //TODO let user log in and put them in the game
             pthread_mutex_lock(fileLock);
             // player is registered
-            if (checkCredentials(username, password))
+            if (checkCredentials(username, password) == 1)
             {
                 pthread_mutex_unlock(fileLock);
                 struct player_alias_t *alias = player_alias_create(username, connectionInfo->address, clientDescriptor, gameMap);
@@ -382,7 +382,7 @@ void *handleConnection(void *data)
             
             pthread_mutex_unlock(fileLock);
             break;
-        case 'i':
+        case 'r':
             pthread_mutex_lock(fileLock);
             // save credentials and terminate connection
             if (!isUsernamePresent(username))
@@ -498,7 +498,7 @@ int checkCredentials(char *username, char *password)
     
     while (1)
     {
-        error = read(usersFile, nameBuffer, USERNAME_SIZE);
+        error = read(credentialsFile, nameBuffer, USERNAME_SIZE);
         if (error == -1)
         {
             return -1;
@@ -510,7 +510,7 @@ int checkCredentials(char *username, char *password)
             return 0;
         }
         
-        error = read(usersFile, passBuffer, PASSWORD_SIZE);
+        error = read(credentialsFile, passBuffer, PASSWORD_SIZE);
         if (error == -1)
         {
             return -1;
