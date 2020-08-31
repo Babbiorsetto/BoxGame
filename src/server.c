@@ -331,14 +331,14 @@ void *handleConnection(void *data)
     {
         // read command, either 'i' or 'a'
         error = readNBytes(clientDescriptor, &command, 1);
-        if (error != 1)
+        if (error == 0)
         {
             close(clientDescriptor);
             pthread_exit(NULL);
         }
         // read username length
         error = readNBytes(clientDescriptor, &receive, sizeof(int));
-        if (error)
+        if (error == 0)
         {
             close(clientDescriptor);
             pthread_exit(NULL);
@@ -346,14 +346,14 @@ void *handleConnection(void *data)
         dataSize = ntohl(receive);
         // read username. Must also contain \0
         error = readNBytes(clientDescriptor, username, dataSize);
-        if (error != dataSize)
+        if (error == 0)
         {
             close(clientDescriptor);
             pthread_exit(NULL);
         }
         // read password length
         error = readNBytes(clientDescriptor, &receive, sizeof(int));
-        if (error)
+        if (error == 0)
         {
             close(clientDescriptor);
             pthread_exit(NULL);
@@ -361,7 +361,7 @@ void *handleConnection(void *data)
         dataSize = ntohl(receive);
         // read password
         error = readNBytes(clientDescriptor, password, dataSize);
-        if (error != dataSize)
+        if (error == 0)
         {
             close(clientDescriptor);
             pthread_exit(NULL);
