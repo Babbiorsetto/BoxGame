@@ -25,6 +25,7 @@ struct player_alias_t *player_alias_create(char *username, struct sockaddr_in *a
         return NULL;
     }
     
+    strcpy(alias->username, username);
     alias->address = address;
     alias->active = 1;
     alias->connection = clientDescriptor;
