@@ -63,10 +63,10 @@ int game_map_pickup(struct game_map_t *map, unsigned int x, unsigned int y, int 
 * if it can be placed according to the game rules
 * 
 * @param name A parameter
-* @return 1 if the box is dropped successfully, 
+* @return ~1 if the box is dropped successfully~ a box cannot be dropped everywhere as of new rules, 
 * 2 if it is dropped and consumed by a corresponding dropoff point, 
 * 3 if it is dropped and consumed by the wrong dropoff point, 
-* 4 if it cannot be dropped because another box is already present, 
+* 4 if it cannot be dropped, 
 * -1 in case of error
 */
 int game_map_drop(struct game_map_t *map, unsigned int x, unsigned int y, int number, int duration);

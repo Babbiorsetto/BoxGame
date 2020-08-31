@@ -275,14 +275,17 @@ int game_map_drop(struct game_map_t *map, unsigned int x, unsigned int y, int nu
     }
 
     int dropN = game_map_hasDropoff(map, x, y);
+    // same dropoff as the box
     if (dropN == number)
     {
         return 2;
     }
+    // no dropoff
     else if (dropN == 0)
     {
-        game_map_setBox(map, x, y, number, duration);
-        return 1;
+        
+        // game_map_setBox(map, x, y, number, duration);
+        return 4;
     }
     // dropN == a valid dropoff but not the right one
     else

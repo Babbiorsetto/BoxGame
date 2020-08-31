@@ -103,23 +103,23 @@ MunitResult game_map_drop_test(const MunitParameter params[], void *data)
     const int badDropX = 1, badDropY = 1, badNumber = 2;
     const int otherX = 4, otherY = 4;
     int trash, trash2;
-
+    // drop where there is nothing (fail)
     int error = game_map_drop(map, x, y, number, duration);
-    munit_assert_int(error, ==, 1);
+    munit_assert_int(error, ==, 4);
     munit_assert_int(game_map_pickup(map, x, y, &trash, &trash2), ==, 1);
     munit_assert_int(trash, ==, number);
     munit_assert_int(trash2, ==, duration);
-
+    // drop on right dropoff
     game_map_setDropoff(map, goodDropX, goodDropY, number);
     error = game_map_drop(map, goodDropX, goodDropY, number, duration);
     munit_assert_int(error, ==, 2);
     munit_assert_int(game_map_pickup(map, goodDropX, goodDropY, &trash, &trash2), ==, 0);
-
+    // drop on wrong dropoff
     game_map_setDropoff(map, badDropX, badDropY, badNumber);
     error = game_map_drop(map, badDropX, badDropY, number, duration);
     munit_assert_int(error, ==, 3);
     munit_assert_int(game_map_pickup(map, badDropX, badDropY, &trash, &trash2), ==, 0);
-
+    // drop on other box
     game_map_drop(map, otherX, otherY, number, duration);
     error = game_map_drop(map, otherX, otherY, 1, 12);
     munit_assert_int(error, ==, 4);

@@ -1,0 +1,11 @@
+- boxes, dropoffs and obstacles are placed at the beginning of the game only
+- players can see boxes and dropoffs, but can only see obstacles after they've hit them
+- players can move in the four directions, pick up or drop boxes, or choose to disconnect
+- every box has a duration, the duration starts counting down when a box is picked up
+- once a box is picked up, it cannot be dropped unless it's on a dropoff
+- the game ends when there are no more boxes on the ground or held by players
+- players can join after a game has started
+- players can leave when it's their move
+- players can rejoin, going back to the position they were in
+- trying to move where another player is, moving toward an obstacle, trying to drop a box, trying to pick up when there is no box cause the loss of a move
+- 
