@@ -61,6 +61,7 @@ void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint
 		exit(1);
 	}
 }
+
 void game(int socketDescriptor)
 {	
 	char message;
