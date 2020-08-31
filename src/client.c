@@ -28,6 +28,7 @@ int isInteger(const char *string);
 void bufferToString(char *buffer, char *string);
 void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint16_t numeroPorta);
 void clearBuffer(void);
+void gameAccessError(char response);
 
 int main(int argc, const char *argv[])
 {
@@ -153,10 +154,12 @@ void userQuery(int socketDescriptor)
 		{
 			connected = 1;
 			printf("%s successful!\n", (command == 'r')? "Registration" : "Login");
-		}
-		
-		if(connected == 0)
-			printf("Could not %s successfully. Try checking username and password.\n", (command == 'r')? "register" : "login");
+		} 
+		else
+		{
+			printf("Could not %s successfully.\n", (command == 'r')? "register" : "login");
+			gameAccessError(response);
+			}		
 	}
 
 	if (command == 'r')
@@ -164,6 +167,20 @@ void userQuery(int socketDescriptor)
 		exit(0);
 	
 	return;
+}
+
+void gameAccessError(char response)
+{
+	switch (response)
+	{
+	case 'a':
+		printf("Error: player already connected!\n");
+		break;
+	case 'f':
+		printf("Error: invalid username or password.\n");
+	default:
+		break;
+	}
 }
 
 void clearBuffer(void)
