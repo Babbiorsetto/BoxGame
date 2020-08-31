@@ -240,6 +240,7 @@ pthread_t startGameThread()
     {
         gameError("pthread_create", "cannot create game thread", 1, 1);
     }
+    pthread_detach(newId);
     return newId;
     
 }
