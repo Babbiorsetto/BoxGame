@@ -131,7 +131,7 @@ int player_list_destroy(struct player_list_t *list)
 
 int player_list_add(struct player_list_t *list, struct player_alias_t *player)
 {
-    struct player_node_t *curr = NULL;
+    struct player_node_t *curr = NULL, *prev = NULL;
     struct player_node_t *newnode = NULL;
 
     if (list == NULL || player == NULL)
@@ -157,7 +157,8 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
     else
     {
         curr = list->first;
-        while (curr->next != NULL)
+        prev = curr;
+        while (curr != NULL)
         {
             // meanwhile if you find the player is already in
             if (strcmp(curr->player->username, player->username) == 0)
@@ -179,14 +180,12 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
                     free(newnode);
                     return 0;
                 }
-                
             }
-
+            prev = curr;
             curr = curr->next;
         }
-
         // reached the end. Put new player in
-        curr->next = newnode;
+        prev->next = newnode;
     }
     pthread_cond_signal(list->notEmpty);
     pthread_mutex_unlock(list->lock);
