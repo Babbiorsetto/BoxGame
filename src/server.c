@@ -27,6 +27,7 @@
 #define MAP_HEIGHT 7
 
 /* function declarations */
+
 void processArguments(int argc, char const **argv, struct sockaddr_in *address);
 void checkArgumentNumber(int argc, char const **argv);
 uint16_t extractPortNumber(char const **argv);
@@ -72,6 +73,9 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
+/*
+* Uses command line arguments to fill address
+*/
 void processArguments(int argc, char const **argv, struct sockaddr_in *address)
 {
     checkArgumentNumber(argc, argv);
@@ -81,6 +85,9 @@ void processArguments(int argc, char const **argv, struct sockaddr_in *address)
     address->sin_addr.s_addr = INADDR_ANY;
 }
 
+/*
+* Exits if argument number is wrong
+*/
 void checkArgumentNumber(int argc, char const **argv)
 {
     if (argc != ARGUMENT_NUMBER)
@@ -90,6 +97,9 @@ void checkArgumentNumber(int argc, char const **argv)
     }
 }
 
+/*
+* returns port number as a 16 bit int from the args array
+*/
 uint16_t extractPortNumber(char const **argv)
 {
     if (!isInteger(argv[PORT_NUMBER_POSITION]))
@@ -104,6 +114,10 @@ uint16_t extractPortNumber(char const **argv)
     return (uint16_t)numero;
 }
 
+/*
+* Checks that given string's content is an integer (signed)
+* @return 1 if it is an integer, 0 otherwise
+*/
 int isInteger(const char *string)
 {
     int x = 0;
@@ -151,6 +165,9 @@ void gameError(char const *functionName, char const *customMessage, int shouldEx
 * Creates all needed data structures for the start of the game. Namely:
 * - global playerList to hold the players currently in game and their order
 * - server address struct
+* - global user credentials file descriptor
+* - global lock for the user credentials file
+* - global game map
 * - Maybe something else in the future
 *
 */
@@ -193,6 +210,11 @@ void setupMemory(struct sockaddr_in **address)
     
 }
 
+/*
+* provides a new address struct allocated on dynamic memory. 
+* don't forget to free it!
+*
+*/
 struct sockaddr_in *makeNewAddress()
 {
     return calloc(1, sizeof(struct sockaddr_in));
@@ -311,33 +333,38 @@ void *handleConnection(void *data)
         error = readNBytes(clientDescriptor, &command, 1);
         if (error != 1)
         {
-            // TODO do what? what would this even mean?
+            close(clientDescriptor);
+            pthread_exit(NULL);
         }
         // read username length
         error = readNBytes(clientDescriptor, &receive, sizeof(int));
         if (error)
         {
-            //TODO
+            close(clientDescriptor);
+            pthread_exit(NULL);
         }
         dataSize = ntohl(receive);
         // read username. Must also contain \0
         error = readNBytes(clientDescriptor, username, dataSize);
         if (error != dataSize)
         {
-            //TODO
+            close(clientDescriptor);
+            pthread_exit(NULL);
         }
         // read password length
         error = readNBytes(clientDescriptor, &receive, sizeof(int));
         if (error)
         {
-            //TODO
+            close(clientDescriptor);
+            pthread_exit(NULL);
         }
         dataSize = ntohl(receive);
         // read password
         error = readNBytes(clientDescriptor, password, dataSize);
         if (error != dataSize)
         {
-            //TODO
+            close(clientDescriptor);
+            pthread_exit(NULL);
         }
         
         switch (command)
@@ -352,24 +379,31 @@ void *handleConnection(void *data)
                 struct player_alias_t *alias = player_alias_create(username, connectionInfo->address, clientDescriptor, gameMap);
                 if (alias == NULL)
                 {
-                    //TODO this is a really bad situation. System must be out of memory 
+                    gameError("player_alias_create", "cannot create new player alias", 1, 1);
                 }
                 
-                // either they're already present and active or can't be added for some reason
-                if(!player_list_add(playerList, alias))
+                error = player_list_add(playerList, alias);
+                // they're already present and active
+                if(error == 0)
                 {
                     response = 'a';
                     player_alias_destroy(alias);
                     writeNBytes(clientDescriptor, &response, 1);
                 }
                 // they are added
-                else
+                else if (error == 1)
                 {
                     response = 't';
                     free(connectionInfo);
                     again = 0;
                     writeNBytes(clientDescriptor, &response, 1);
                 }
+                // error on list insertion
+                else
+                {
+                    // TODO
+                }
+                
                 
             }
             else
