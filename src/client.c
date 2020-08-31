@@ -37,7 +37,7 @@ int main(int argc, const char *argv[])
 	preparaIndirizzo(&address, argv[1], extractPortNumber(argv));
 	connection(&socketDescriptor, &address);
 	userQuery(socketDescriptor);
-	//game(socketDescriptor);
+	game(socketDescriptor);
 }
 
 void checkArgumentNumber(int argc)
@@ -65,8 +65,31 @@ void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint
 
 void game(int socketDescriptor)
 {	
-	char message;
-	read(socketDescriptor, &message, 1);
+	char serverCommand, playerCommand;
+	int incomingBytes = 0;
+	char buffer[200];
+
+	while(true)
+	{
+		read(socketDescriptor, &serverCommand, 1);
+
+		if(serverCommand == 's')
+		{
+			read(socketDescriptor, &incomingBytes, 4);
+			read(socketDescriptor, &buffer, incomingBytes);
+
+			printf("%s\n", buffer);
+		}
+		else if(serverCommand = 'c')
+		{
+			printf("Insert a command\nn - go north\ns - go south\ne - go east\no - go west\np - pick up box\nd - drop box\nq - quit :\n");
+			playerCommand = getchar();
+			clearBuffer();
+
+			write(socketDescriptor, &playerCommand, 1);
+		}
+
+	}
 }
 
 void connection(int *socketDescriptor, struct sockaddr_in *address)
