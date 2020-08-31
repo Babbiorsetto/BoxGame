@@ -7,6 +7,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <time.h>
 #include "player_list.h"
 #include "player_alias.h"
 #include "game_map.h"
@@ -47,6 +48,8 @@ char getCommand(struct player_alias_t *player);
 int calculateMove(struct game_map_t *map, char move, int x, int y, int *retX, int *retY);
 void sendMessage(struct player_alias_t *player, char *message);
 int writeNBytes(int fileDescriptor, void *buffer, int nBytes);
+void randomizeMap(struct game_map_t *map, int width, int height);
+int randInRangeIncluded(int min, int max);
 
 /**/
 struct connection_info{
@@ -64,9 +67,11 @@ int main(int argc, char const *argv[])
 {
 
     struct sockaddr_in *serverAddress;
+    srand(time(0));
 
     setupMemory(&serverAddress);
     processArguments(argc, argv, serverAddress);
+    randomizeMap(gameMap, MAP_WIDTH, MAP_HEIGHT);
     startGameThread();
     waitForConnections(serverAddress);
 
@@ -614,8 +619,6 @@ void *game(void *arg)
     struct player_alias_t *currentPlayer;
     struct player_list_iterator_t *iterator;
 
-    /*TODO fill the game map with obstacles, dropoffs and the first boxes*/
-
     player_list_waitOnEmpty(playerList);
     error = player_list_iterator_create(playerList, &iterator);
     if (error)
@@ -885,4 +888,75 @@ int writeNBytes(int fileDescriptor, void *buffer, int nBytes)
     }
 
     return nBytes;
+}
+
+/*
+* places obstacles, dropoffs and boxes on an empty game_map
+*/
+void randomizeMap(struct game_map_t *map, int width, int height)
+{
+    int x, y, place, duration;
+    int i;
+    const float OBSTACLE_CHANCE = 2; // chance is 1/OBSTACLE_CHANCE
+    const int OBSTACLES_MAX = 16;
+    const int DROPOFF_N = 2;
+    const int BOX_N = 5;
+    const int DURATION_MIN = 3;
+    const int DURATION_MAX = 15;
+
+    // place some obstacles
+
+    for (i = 0; i < OBSTACLES_MAX; i++)
+    {
+        x = randInRangeIncluded(0, width);
+        y = randInRangeIncluded(0, height);
+        place = rand();
+
+        if (place < (RAND_MAX + 1u) / OBSTACLE_CHANCE)
+        {
+            game_map_setObstacle(map, x, y);
+        }
+        
+    }
+
+    // place dropoffs
+    i = 0;
+    while (i < DROPOFF_N)
+    {
+        x = randInRangeIncluded(0, width);
+        y = randInRangeIncluded(0, height);
+
+        if (game_map_hasObstacle(map, x, y) == 0)
+        {
+            game_map_setDropoff(map, x, y, 1);
+            i++;
+        }
+        
+    }
+
+    // place boxes
+    i = 0;
+    while (i < BOX_N)
+    {
+        x = randInRangeIncluded(0, width);
+        y = randInRangeIncluded(0, height);
+        duration = randInRangeIncluded(DURATION_MIN, DURATION_MAX);
+
+        if (game_map_hasObstacle(map, x, y) == 0 && game_map_hasDropoff(map, x, y) == 0)
+        {
+            game_map_setBox(map, x, y, 1, duration);
+            i++;
+        }
+        
+    }
+    
+    return;
+}
+
+/*
+* returns a random number in the range from min to max, both ends included
+*/
+int randInRangeIncluded(int min, int max)
+{
+    return min + rand() / (RAND_MAX / (max - min + 1) + 1);
 }
