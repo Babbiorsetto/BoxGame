@@ -111,11 +111,6 @@ int personal_map_destroy(struct personal_map_t *map)
     return 0;
 }
 
-void personal_map_revealObstacle(struct personal_map_t *map, int x, int y)
-{
-    //TODO
-}
-
 char personal_map_getSymbol(struct personal_map_t *map, int x, int y)
 {
     if (map == NULL)
@@ -132,6 +127,24 @@ char personal_map_getSymbol(struct personal_map_t *map, int x, int y)
     
     return map->data[x * (refW + 1) + y];
     
+}
+
+int personal_map_setSymbol(struct personal_map_t *map, int x, int y, char symbol)
+{
+    if (map == NULL)
+    {
+        return -1;
+    }
+
+    int refW = game_map_getWidth(map->reference), refH = game_map_getHeight(map->reference);
+
+    if (x < 0 || y < 0 || x >= refW || y >= refH)
+    {
+        return -1;
+    }
+    
+    map->data[x * (refW + 1) + y] = symbol;
+    return 0;
 }
 
 const char *personal_map_getString(struct personal_map_t *map)

@@ -632,7 +632,7 @@ void *game(void *arg)
             else if (error == 3)
             {
                 // reveal blocked square on player's map
-                personal_map_revealObstacle(currentPlayer->map, xCoord, yCoord);
+                personal_map_setSymbol(currentPlayer->map, xCoord, yCoord, 'X');
             }
             break;
         case 'p':
