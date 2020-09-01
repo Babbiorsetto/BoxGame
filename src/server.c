@@ -667,13 +667,14 @@ void *game(void *arg)
             // player cannot move to new square due to there being a player
             else if (error == 2)
             {
-                sendMessage(currentPlayer, "");
+                sendMessage(currentPlayer, "That square is occupied by another player.");
             }
             // player cannot move to new square due to obstacle
             else if (error == 3)
             {
                 // reveal blocked square on player's map
                 personal_map_setSymbol(currentPlayer->map, xCoord, yCoord, 'X');
+                sendMessage(currentPlayer, "You bumped into an obstacle.");
             }
             break;
         case 'p':
@@ -686,12 +687,12 @@ void *game(void *arg)
                 {
                     currentPlayer->box = boxValue;
                     currentPlayer->duration = boxDuration;
-                    game_map_setBox(gameMap, currentPlayer->x, currentPlayer->y, 0, 0);
+                    sendMessage(currentPlayer, "You picked up the box.");
                 }
                 // there was no box to pick up
                 else if (error == 0)
                 {
-                    //TODO
+                    sendMessage(currentPlayer, "There is no box to pick up.");
                 }
                 // some kind of error
                 else
@@ -702,8 +703,7 @@ void *game(void *arg)
             // player already had a box
             else
             {
-                //TODO
-                sendMessage(currentPlayer, "");
+                sendMessage(currentPlayer, "You already have a box.");
             }
             
             break;
@@ -721,13 +721,14 @@ void *game(void *arg)
                 // box cannot be dropped
                 else if (error == 4)
                 {
-                    sendMessage(currentPlayer, "");
+                    sendMessage(currentPlayer, "You can't drop the box here.");
                 }
 
                 // update score if box is turned in to dropoff
                 switch (error)
                 {
                 case 2:
+                    sendMessage(currentPlayer, "You dropped the box off succesfully!");
                     currentPlayer->points += 1;
                     break;
                 case 3:
@@ -740,11 +741,12 @@ void *game(void *arg)
             // player doesn't have any box
             else
             {
-                sendMessage(currentPlayer, "");
+                sendMessage(currentPlayer, "You have no box to drop.");
             }
             
             break;
         case 'q':
+        //if the player either quit the game or closed the client
         case 0:
             currentPlayer->active = 0;
             close(currentPlayer->connection);
