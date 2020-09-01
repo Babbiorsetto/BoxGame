@@ -103,7 +103,7 @@ int personal_map_setSymbol(struct personal_map_t *map, int x, int y, char symbol
     return 0;
 }
 
-const char *personal_map_getString(struct personal_map_t *map)
+char *personal_map_getString(struct personal_map_t *map)
 {
     return map->data;
 }

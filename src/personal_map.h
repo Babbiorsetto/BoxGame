@@ -42,7 +42,7 @@ char personal_map_getSymbol(struct personal_map_t *map, int x, int y);
 * @param map The map to get the string of. Must not be NULL
 * @return A string representing the content of the map
 */
-const char *personal_map_getString(struct personal_map_t *map);
+char *personal_map_getString(struct personal_map_t *map);
 
 /*
 * Sets the given position to given symbol.
