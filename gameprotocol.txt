@@ -1,0 +1,5 @@
+server sends 'c'
+    client gets command from the player and sends it to server ('n', 'e', 'o', 's', 'd', 'p', 'q')
+
+server sends 's', message length(integer), message(null terminated string)
+    client prints message on screen

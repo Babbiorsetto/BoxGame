@@ -781,7 +781,7 @@ char getCommand(struct player_alias_t *player)
 {
     int fd = player->connection;
     int error;
-    char command = 't'; // reused as command to send and to receive into
+    char command = 'c'; // reused as command to send and to receive into
 
     error = writeNBytes(fd, &command, 1);
     if (error == -1)
