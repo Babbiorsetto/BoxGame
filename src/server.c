@@ -828,31 +828,31 @@ int calculateMove(struct game_map_t *map, char move, int x, int y, int *retX, in
     switch (move)
     {
     case 'n':
-        y--;
-        if (y < 0)
+        x--;
+        if (x < 0)
         {
-            y = game_map_getHeight(map) - 1;
+            x = game_map_getHeight(map) - 1;
         }
         break;
     case 's':
-        y++;
-        if (y > game_map_getHeight(map) - 1)
-        {
-            y = 0;
-        }
-        break;
-    case 'e':
         x++;
-        if (x > game_map_getWidth(map) - 1)
+        if (x > game_map_getHeight(map) - 1)
         {
             x = 0;
         }
         break;
-    case 'o':
-        x--;
-        if (x < 0)
+    case 'e':
+        y++;
+        if (y > game_map_getWidth(map) - 1)
         {
-            x = game_map_getWidth(map) - 1;
+            y = 0;
+        }
+        break;
+    case 'o':
+        y--;
+        if (y < 0)
+        {
+            y = game_map_getWidth(map) - 1;
         }
         break;
     default:
