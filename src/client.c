@@ -21,7 +21,7 @@ int socketDescriptor = 0;
 void game(int socketDescriptor);
 void connection(int *socketDescriptor, struct sockaddr_in *address);
 void userQuery(int socketDescriptor);
-void checkSocketError(ssize_t error, int sockDescriptor);
+void checkSocketError(ssize_t error, int socketDescriptor);
 uint16_t extractPortNumber(const char **argv);
 void checkArgumentNumber(int argc);
 int isInteger(const char *string);
@@ -66,27 +66,44 @@ void preparaIndirizzo(struct sockaddr_in *indirizzo, const char *stringaIP, uint
 void game(int socketDescriptor)
 {	
 	char serverCommand, playerCommand;
-	int incomingBytes = 0;
+	int incomingBytes = 0, readBytes = 0;
 	char buffer[200];
 
-	while(true)
+	while(1)
 	{
-		read(socketDescriptor, &serverCommand, 1);
+		readBytes = read(socketDescriptor, &serverCommand, 1);
+		checkSocketError(readBytes, socketDescriptor);
 
 		if(serverCommand == 's')
 		{
 			read(socketDescriptor, &incomingBytes, 4);
+			incomingBytes = ntohl(incomingBytes);
 			read(socketDescriptor, &buffer, incomingBytes);
 
 			printf("%s\n", buffer);
 		}
-		else if(serverCommand = 'c')
+		else if(serverCommand == 'c')
 		{
-			printf("Insert a command\nn - go north\ns - go south\ne - go east\no - go west\np - pick up box\nd - drop box\nq - quit :\n");
-			playerCommand = getchar();
-			clearBuffer();
+			do
+			{
+				printf("Insert a command\nn - go north  s - go south  e - go east  o - go west\np - pick up box  d - drop box  q - quit :\n");
+				playerCommand = getchar();
+				clearBuffer();
+			} while(strchr("nseqodp", (int) playerCommand) == NULL);
 
 			write(socketDescriptor, &playerCommand, 1);
+
+			if(playerCommand == 'q')
+			{
+				printf("Closing game.\n");
+				close(socketDescriptor);
+				exit(0);
+			}
+		}
+		else
+		{
+			printf("Oopsie doodle :)\n");
+			exit(1);
 		}
 
 	}
@@ -139,6 +156,7 @@ void userQuery(int socketDescriptor)
 	{
 		printf("Insert username (max %d characters, 'q' to exit):\n", USERNAME_SIZE-1);
 		scanf("%s", buffer);
+		clearBuffer();
 
 		bufferToString(buffer, username);
 
@@ -152,6 +170,7 @@ void userQuery(int socketDescriptor)
 
 		printf("Insert password (max %d characters):\n", PASSWORD_SIZE-1);
 		scanf("%s", buffer);
+		clearBuffer();
 
 		bufferToString(buffer, password);
 
@@ -172,7 +191,7 @@ void userQuery(int socketDescriptor)
 		
 		error = read(socketDescriptor, &response, 1);
 		checkSocketError(error, socketDescriptor);
-
+		
 		if(response == 't') 
 		{
 			connected = 1;
@@ -186,8 +205,10 @@ void userQuery(int socketDescriptor)
 	}
 
 	if (command == 'r')
+	{
 		close(socketDescriptor);
 		exit(0);
+	}
 	
 	return;
 }
@@ -222,12 +243,19 @@ void bufferToString(char *buffer, char *string)
 	return;
 }
 
-void checkSocketError(ssize_t error, int sockDescriptor)
+void checkSocketError(ssize_t error, int socketDescriptor)
 {
 	if (error == -1)
 	{
 		close(socketDescriptor);
 		fprintf(stderr, "Could not read/write on socket.\n");
+		exit(1);
+	}
+
+	if (error == 0)
+	{
+		close(socketDescriptor);
+		fprintf(stderr, "Trying to read on a closed socket.\n");
 		exit(1);
 	}
 }
