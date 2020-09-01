@@ -577,16 +577,19 @@ int checkCredentials(char *username, char *password)
 }
 
 /*
-* To be reasonably sure that n bytes were actually read into buffer
-* TODO
+* Reads nBytes bytes from fileDescriptor into buffer
+*
+* @return nBytes if n bytes were read, 0 if EOF was encountered, -1 on error
 */
 int readNBytes(int fileDescriptor, void *buffer, int nBytes)
 {
     ssize_t error;
     ssize_t totalBytesRead = 0;
+    char *charBuffer = (char *) buffer;
+
     while (totalBytesRead < nBytes)
     {
-        error = read(fileDescriptor, buffer + totalBytesRead, nBytes - totalBytesRead);
+        error = read(fileDescriptor, charBuffer + totalBytesRead, nBytes - totalBytesRead);
         if (error == -1)
         {
             return -1;
@@ -873,13 +876,20 @@ void sendMessage(struct player_alias_t *player, char *message)
     return;
 }
 
+/*
+* Writes nBytes bytes on fileDescriptor from buffer
+*
+* @return nBytes if n bytes were written, -1 on error
+*/
 int writeNBytes(int fileDescriptor, void *buffer, int nBytes)
 {
     ssize_t error;
     ssize_t totalBytesWritten = 0;
+    char *charBuffer = (char *)buffer;
+    
     while (totalBytesWritten < nBytes)
     {
-        error = write(fileDescriptor, buffer + totalBytesWritten, nBytes - totalBytesWritten);
+        error = write(fileDescriptor, charBuffer + totalBytesWritten, nBytes - totalBytesWritten);
         if (error == -1)
         {
             return -1;
