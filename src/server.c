@@ -745,6 +745,7 @@ void *game(void *arg)
             
             break;
         case 'q':
+        case 0:
             currentPlayer->active = 0;
             close(currentPlayer->connection);
             break;
@@ -773,17 +774,31 @@ void *game(void *arg)
     
 }
 
+/*
+* @return The command character entered by the player, 0 if the connection was closed from the other side.
+*/
 char getCommand(struct player_alias_t *player)
 {
     int fd = player->connection;
     int error;
-    char command;
+    char command = 't'; // reused as command to send and to receive into
 
-    error = readNBytes(fd, &command, 1);
-    if (error == 0)
+    error = writeNBytes(fd, &command, 1);
+    if (error == -1)
     {
         //TODO
     }
+    
+    error = readNBytes(fd, &command, 1);
+    if (error == 0)
+    {
+        return 0;
+    }
+    else if (error == -1)
+    {
+        //TODO
+    }
+    
     return command;
     
 }
