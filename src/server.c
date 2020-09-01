@@ -50,7 +50,8 @@ void sendMessage(struct player_alias_t *player, char *message);
 int writeNBytes(int fileDescriptor, void *buffer, int nBytes);
 void randomizeMap(struct game_map_t *map, int width, int height);
 int randInRangeIncluded(int min, int max);
-
+void sendUI();
+void updateMaps();
 /**/
 struct connection_info{
     int fd;
@@ -642,6 +643,7 @@ void *game(void *arg)
             player_list_tick(playerList);
             continue;
         }
+        sendUI();
 
         char command = getCommand(currentPlayer);
         switch (command)
@@ -762,11 +764,11 @@ void *game(void *arg)
         // it is also end turn
         if (shouldTurnAdvance)
         {
-            game_map_tick(gameMap);
+            //game_map_tick(gameMap);
             player_list_tick(playerList);
             turnsLeft -= 1;
-        }
-        
+        }   
+        updateMaps();     
     }
 
     //end of game
@@ -987,4 +989,40 @@ void randomizeMap(struct game_map_t *map, int width, int height)
 int randInRangeIncluded(int min, int max)
 {
     return min + rand() / (RAND_MAX / (max - min + 1) + 1);
+}
+
+void sendUI()
+{
+    struct player_list_iterator_t *iterator;
+    struct player_alias_t *player;
+    int error = player_list_iterator_create(playerList, &iterator);
+    int i = 0;
+    if(error < 0)
+    {
+        //TODO
+    }
+    
+    while(i != 1)
+    {
+        player = player_list_iterator_next(iterator, &i);
+        sendMessage(player, personal_map_getString(player->map));
+    }
+}
+
+void updateMaps()
+{
+    struct player_list_iterator_t *iterator;
+    int i = 0;
+    struct player_alias_t *player;
+    int error = player_list_iterator_create(playerList, &iterator);
+    if(error < 0)
+    {
+        exit(1);
+    }
+
+    while(i != 1)
+    {
+        player = player_list_iterator_next(iterator, &i);
+        personal_map_update(player->map);
+    }
 }
