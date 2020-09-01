@@ -1,8 +1,8 @@
-#include "player_list.h"
-#include "player_alias.h"
-#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include "player_alias.h"
+#include "player_list.h"
 
 struct player_list_t
 {
@@ -257,5 +257,5 @@ void player_list_waitOnEmpty(struct player_list_t *list)
 
 void player_list_tick(struct player_list_t *list)
 {
-    //TODO
+
 }
