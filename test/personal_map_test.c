@@ -1,6 +1,7 @@
 #include "string.h"
 #include "munit.h"
 #include "game_map.h"
+#include "player_alias.h"
 #include "personal_map.h"
 #include "personal_map_test.h"
 
@@ -17,10 +18,12 @@ MunitResult personal_map_create_test(const MunitParameter params[], void *data)
     game_map_create(&gameMap, 7, 8);
     game_map_setObstacle(gameMap, 3, 4);
     game_map_setPlayer(gameMap, 1, 2);
+    game_map_setPlayer(gameMap, 0, 0);
     game_map_setDropoff(gameMap, 5, 5, 1);
     game_map_setBox(gameMap, 3, 5, 1, 12);
+    struct player_alias_t *player = player_alias_create("Austin", NULL, 42, gameMap);
     /*
-    -------
+    Y------
     --P----
     -------
     ----X1-
@@ -30,12 +33,13 @@ MunitResult personal_map_create_test(const MunitParameter params[], void *data)
     -------
     */
 
-    personal_map_create(&map, gameMap);
+    personal_map_create(&map, gameMap, player);
     munit_logf(MUNIT_LOG_DEBUG, "\n%s", personal_map_getString(map));
     munit_assert_int(strlen(personal_map_getString(map)), ==, 63);
     // obstacles should NOT be copied, they are hidden for the player
     munit_assert_char(personal_map_getSymbol(map, 3, 4), ==, '-');
     munit_assert_char(personal_map_getSymbol(map, 1, 2), ==, 'P');
+    munit_assert_char(personal_map_getSymbol(map, 0, 0), ==, 'Y');
     munit_assert_char(personal_map_getSymbol(map, 5, 5), ==, 'A');
     munit_assert_char(personal_map_getSymbol(map, 3, 5), ==, '1');
     munit_assert_char(personal_map_getSymbol(map, 2, 7), ==, '\n');

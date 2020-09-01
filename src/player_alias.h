@@ -2,8 +2,9 @@
 #define PLAYER_ALIAS_H
 
 #include <netinet/in.h>
-#include "personal_map.h"
 #include "game_map.h"
+
+struct personal_map_t;
 
 struct player_alias_t
 {

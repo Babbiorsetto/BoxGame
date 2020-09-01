@@ -2,6 +2,7 @@
 #define PERSONAL_MAP_H
 
 #include "game_map.h"
+#include "player_alias.h"
 
 struct personal_map_t;
 
@@ -12,9 +13,10 @@ struct personal_map_t;
 * @param map The address of a pointer that will be made to point to the newly created personal_map
 * @param reference The game_map to use as a reference to fill the new personal_map, as well as the permanent reference it will hold.
 * must not be NULL
+* @param owner The owner of the new map, used to properly draw their position. Must not be NULL
 * @return 0 on normal operation, -1 in case of error
 */
-int personal_map_create(struct personal_map_t **map, struct game_map_t *reference);
+int personal_map_create(struct personal_map_t **map, struct game_map_t *reference, struct player_alias_t *owner);
 
 /*
 * Destroys a previously created personal_map
@@ -52,5 +54,13 @@ const char *personal_map_getString(struct personal_map_t *map);
 * @return 0 on normal operation. -1 on error
 */
 int personal_map_setSymbol(struct personal_map_t *map, int x, int y, char symbol);
+
+/*
+* Updates the state of given personal_map according to the info in its reference 
+* game_map. Players, boxes and dropoffs are updated. Obstacles are left unchanged in their discovery status.
+*
+* @param map
+*/
+void personal_map_update(struct personal_map_t *map);
 
 #endif

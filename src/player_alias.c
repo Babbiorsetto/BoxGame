@@ -17,7 +17,7 @@ struct player_alias_t *player_alias_create(char *username, struct sockaddr_in *a
         free(alias);
         return NULL;
     }
-    int error = personal_map_create(&(alias->map), gameMap);
+    int error = personal_map_create(&(alias->map), gameMap, alias);
     if (error == -1)
     {
         free(alias->username);
