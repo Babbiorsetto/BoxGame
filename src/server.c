@@ -379,12 +379,14 @@ void *handleConnection(void *data)
         switch (command)
         {
         case 'l':
-            //TODO let user log in and put them in the game
+            
             pthread_mutex_lock(fileLock);
+            error = checkCredentials(username, password);
+            pthread_mutex_unlock(fileLock);
+            
             // player is registered
-            if (checkCredentials(username, password) == 1)
+            if (error == 1)
             {
-                pthread_mutex_unlock(fileLock);
                 struct player_alias_t *alias = player_alias_create(username, connectionInfo->address, clientDescriptor, gameMap);
                 if (alias == NULL)
                 {
@@ -417,13 +419,10 @@ void *handleConnection(void *data)
             }
             else
             {
-                pthread_mutex_unlock(fileLock);
                 response = 'f';
                 writeNBytes(clientDescriptor, &response, 1);
             }
             
-            
-            pthread_mutex_unlock(fileLock);
             break;
         case 'r':
             pthread_mutex_lock(fileLock);
