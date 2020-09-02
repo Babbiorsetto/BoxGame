@@ -51,10 +51,11 @@ void sendMessage(struct player_alias_t *player, char *message);
 int writeNBytes(int fileDescriptor, void *buffer, int nBytes);
 void randomizeMap(struct game_map_t *map, int width, int height);
 int randInRangeIncluded(int min, int max);
-void sendUI();
+void sendUI(struct player_alias_t *currentPlayer);
 void updateMaps();
 void pickFreeMapPosition(struct player_alias_t *player);
 void sig_int(int signal);
+void buildPlayersString(char *out, struct player_alias_t *currentPlayer);
 /**/
 struct connection_info{
     int fd;
@@ -702,7 +703,7 @@ void *game(void *arg)
             continue;
         }
         updateMaps();
-        sendUI();
+        sendUI(currentPlayer);
 
         char command = getCommand(currentPlayer);
         switch (command)
@@ -1047,12 +1048,23 @@ int randInRangeIncluded(int min, int max)
     return min + rand() / (RAND_MAX / (max - min + 1) + 1);
 }
 
-void sendUI()
+/*
+* Despite what it looks like, sends the ui to all players.
+* 
+* @param currentPlayer used to determine who to mark as the current player
+*/
+void sendUI(struct player_alias_t *currentPlayer)
 {
     struct player_list_iterator_t *iterator;
     struct player_alias_t *player;
-    int error = player_list_iterator_create(playerList, &iterator);
+    // I swear this will cause buffer overflows but I can't be bothered to fix it
+    char buffer[1000];
+    buffer[0] = '\0';
     int i = 0;
+
+    buildPlayersString(buffer, currentPlayer);
+
+    int error = player_list_iterator_create(playerList, &iterator);
     if(error < 0)
     {
         //TODO
@@ -1064,9 +1076,41 @@ void sendUI()
         if (player->active == 1)
         {
             sendMessage(player, personal_map_getString(player->map));
+            sendMessage(player, buffer);
         }
         
     }
+    player_list_iterator_destroy(iterator);
+}
+
+void buildPlayersString(char *out, struct player_alias_t *currentPlayer)
+{
+    int i = 0;
+    struct player_list_iterator_t *iterator;
+    struct player_alias_t *curr;
+    char temp[USERNAME_SIZE + 20];
+
+    player_list_iterator_create(playerList, &iterator);
+
+    while (i != 1)
+    {
+        curr = player_list_iterator_next(iterator, &i);
+        if (curr->active == 1)
+        {
+            sprintf(
+                temp,
+                "%s%s(%d)%s",
+                curr == currentPlayer ? "*" : "",
+                curr->username,
+                curr->points,
+                i == 0 ? "->" : ""
+            );
+            strcat(out, temp);
+        }
+        
+    }
+    player_list_iterator_destroy(iterator);
+    
 }
 
 void updateMaps()
@@ -1085,4 +1129,5 @@ void updateMaps()
         player = player_list_iterator_next(iterator, &i);
         personal_map_update(player->map);
     }
+    player_list_iterator_destroy(iterator);
 }
