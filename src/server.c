@@ -1061,7 +1061,11 @@ void sendUI()
     while(i != 1)
     {
         player = player_list_iterator_next(iterator, &i);
-        sendMessage(player, personal_map_getString(player->map));
+        if (player->active == 1)
+        {
+            sendMessage(player, personal_map_getString(player->map));
+        }
+        
     }
 }
 
