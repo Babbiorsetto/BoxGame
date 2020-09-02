@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
+#include "signal.h"
 #include "player_list.h"
 #include "player_alias.h"
 #include "game_map.h"
@@ -53,6 +54,7 @@ int randInRangeIncluded(int min, int max);
 void sendUI();
 void updateMaps();
 void pickFreeMapPosition(struct player_alias_t *player);
+void sig_int(int signal);
 /**/
 struct connection_info{
     int fd;
@@ -68,7 +70,7 @@ pthread_mutex_t *mapLock;
 
 int main(int argc, char const *argv[])
 {
-
+    signal(SIGINT, sig_int);
     struct sockaddr_in *serverAddress;
     srand(time(0));
 
@@ -79,6 +81,11 @@ int main(int argc, char const *argv[])
     waitForConnections(serverAddress);
 
     return 0;
+}
+
+void sig_int(int signal)
+{
+    exit(0);
 }
 
 /*
