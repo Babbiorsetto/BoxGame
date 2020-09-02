@@ -52,6 +52,7 @@ void randomizeMap(struct game_map_t *map, int width, int height);
 int randInRangeIncluded(int min, int max);
 void sendUI();
 void updateMaps();
+void placePlayer(struct player_alias_t *player);
 /**/
 struct connection_info{
     int fd;
@@ -61,8 +62,9 @@ struct connection_info{
 /* global */
 struct player_list_t *playerList;
 struct game_map_t *gameMap;
-int usersFile;
+int writeOnlyUsersFile;
 pthread_mutex_t *fileLock;
+pthread_mutex_t *mapLock;
 
 int main(int argc, char const *argv[])
 {
@@ -191,8 +193,8 @@ void setupMemory(struct sockaddr_in **address)
         gameError("makeNewAddress", "cannot allocate server address", 1, 1);
     }
 
-    usersFile = open(USER_CREDENTIALS_FILE, USER_FILE_OFLAGS, USER_FILE_CREATE_PERMISSIONS);
-    if (usersFile == -1)
+    writeOnlyUsersFile = open(USER_CREDENTIALS_FILE, USER_FILE_OFLAGS, USER_FILE_CREATE_PERMISSIONS);
+    if (writeOnlyUsersFile == -1)
     {
         gameError("open", strcat("cannot open ", USER_CREDENTIALS_FILE), 1, 1);
     }
@@ -502,12 +504,12 @@ int isUsernamePresent(char *username)
 
 int insertUserCredentials(char *username, char *password)
 {
-    int error = write(usersFile, username, USERNAME_SIZE);
+    int error = write(writeOnlyUsersFile, username, USERNAME_SIZE);
     if (error == -1)
     {
         //TODO uh oh! This is bad
     }
-    error = write(usersFile, password, PASSWORD_SIZE);
+    error = write(writeOnlyUsersFile, password, PASSWORD_SIZE);
     if (error == -1)
     {
         //TODO
