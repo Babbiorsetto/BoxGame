@@ -52,6 +52,7 @@ int player_alias_copyOver(struct player_alias_t *dest, struct player_alias_t *sr
         return -1;
     }
     
+    dest->active = 1;
     dest->address = src->address;
     dest->connection = src->connection;
     return 0;

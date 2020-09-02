@@ -52,7 +52,7 @@ void randomizeMap(struct game_map_t *map, int width, int height);
 int randInRangeIncluded(int min, int max);
 void sendUI();
 void updateMaps();
-void placePlayer(struct player_alias_t *player);
+void pickFreeMapPosition(struct player_alias_t *player);
 /**/
 struct connection_info{
     int fd;
@@ -176,6 +176,7 @@ void gameError(char const *functionName, char const *customMessage, int shouldEx
 * - global user credentials file descriptor
 * - global lock for the user credentials file
 * - global game map
+* - global map mutex
 * - Maybe something else in the future
 *
 */
@@ -215,6 +216,18 @@ void setupMemory(struct sockaddr_in **address)
     {
         gameError("game_map_create", "cannot create game map", 1, 1);
     }
+
+    mapLock = malloc(sizeof(pthread_mutex_t));
+    if (mapLock == NULL)
+    {
+        gameError("malloc", "cannot instantiate map lock", 1, 1);
+    }
+    error = pthread_mutex_init(mapLock, NULL);
+    if (error == -1)
+    {
+        gameError("pthread_mutex_init", "cannot initialize map lock", 1, 1);
+    }
+    
     
 }
 
@@ -392,27 +405,39 @@ void *handleConnection(void *data)
                 {
                     gameError("player_alias_create", "cannot create new player alias", 1, 1);
                 }
+
+                pthread_mutex_lock(mapLock);
+
+                pickFreeMapPosition(alias);
                 
                 error = player_list_add(playerList, alias);
                 // they're already present and active
                 if(error == 0)
                 {
+                    pthread_mutex_unlock(mapLock);
                     response = 'a';
                     player_alias_destroy(alias);
                     writeNBytes(clientDescriptor, &response, 1);
                 }
-                // they are added
-                else if (error == 1)
+                else
                 {
+                    // error on list insertion
+                    if (error == -1)
+                    {
+                        //TODO uh oh!
+                    }
+                    
+                    // the player was not already in
+                    if (error == 1)
+                    {
+                        game_map_setPlayer(gameMap, alias->x, alias->y);
+                    }
+                    
+                    pthread_mutex_unlock(mapLock);
                     response = 't';
                     free(connectionInfo);
                     again = 0;
                     writeNBytes(clientDescriptor, &response, 1);
-                }
-                // error on list insertion
-                else
-                {
-                    // TODO
                 }
                 
                 
@@ -607,6 +632,28 @@ int readNBytes(int fileDescriptor, void *buffer, int nBytes)
     return nBytes;
 }
 
+void pickFreeMapPosition(struct player_alias_t *player)
+{
+    int x, y, placed = 0;
+
+    while (placed == 0)
+    {
+        x = randInRangeIncluded(0, game_map_getHeight(gameMap) - 1);
+        y = randInRangeIncluded(0, game_map_getWidth(gameMap) - 1);
+
+        if (game_map_hasObstacle(gameMap, x, y) == 0 &&
+            game_map_hasPlayer(gameMap, x, y) == 0
+        )
+        {
+            player->x = x;
+            player->y = y;
+            placed = 1;
+        }
+        
+    }
+    
+}
+
 /*Here be game*/
 
 /*
@@ -622,6 +669,7 @@ void *game(void *arg)
     int xCoord, yCoord;
     int boxValue, boxDuration;
     int turnsLeft;
+    struct timespec wait = {0, 1000}; 
     struct player_alias_t *currentPlayer;
     struct player_list_iterator_t *iterator;
 
@@ -635,15 +683,18 @@ void *game(void *arg)
     turnsLeft = GAME_TURNS;
     while (turnsLeft > 0)
     {
+        pthread_mutex_lock(mapLock);
         currentPlayer = player_list_iterator_next(iterator, &shouldTurnAdvance);
+        
         // current player is inactive, advance turn if needed but skip their action
         if (!currentPlayer->active)
         {
             turnsLeft -= shouldTurnAdvance;
-            game_map_tick(gameMap);
             player_list_tick(playerList);
+            pthread_mutex_unlock(mapLock);
             continue;
         }
+        updateMaps();
         sendUI();
 
         char command = getCommand(currentPlayer);
@@ -758,10 +809,6 @@ void *game(void *arg)
             break;
         }
 
-        //end of command, do what should happen after each player's move
-        /*TODO update everyone's map if this player moved
-        send everyone the state of the map*/
-
         // it is also end turn
         if (shouldTurnAdvance)
         {
@@ -769,7 +816,8 @@ void *game(void *arg)
             player_list_tick(playerList);
             turnsLeft -= 1;
         }   
-        updateMaps();     
+        pthread_mutex_unlock(mapLock);
+        nanosleep(&wait, NULL);
     }
 
     //end of game

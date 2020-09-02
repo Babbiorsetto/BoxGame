@@ -62,7 +62,7 @@ int player_list_is_empty(struct player_list_t *list);
 * @param list is the memory location that contains the list to which the player must be added
 * @param player is the memory location that contains the player that is going to be added to the list
 * @return 0 if the player cannot be added because they are already in the list and active, 
-* 1 if the player is succesfully added or re-added to the list, 
+* 1 if the player is succesfully added, 2 if they are re-added, 
 * -1 on error
 */
 int player_list_add(struct player_list_t *list, struct player_alias_t *player);

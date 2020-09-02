@@ -171,7 +171,7 @@ int player_list_add(struct player_list_t *list, struct player_alias_t *player)
                     player_alias_copyOver(curr->player, player);
                     player_alias_destroy(player);
                     free(newnode);
-                    return 1;
+                    return 2;
                 }
                 // or prevent them from joining if they were still active in game
                 else
