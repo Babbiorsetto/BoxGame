@@ -238,6 +238,13 @@ void player_list_purge(struct player_list_t *list)
             prev = curr;
             curr = curr->next;
         }
+        
+        curr->player->x = 0;
+        curr->player->y = 0;
+        curr->player->points = 0;
+        curr->player->box = 0;
+        curr->player->duration = 0;
+        personal_map_clear(curr->player);
 
         // reached the last position
         if (!(curr->player->active))
