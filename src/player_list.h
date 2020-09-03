@@ -82,6 +82,13 @@ void player_list_purge(struct player_list_t *list);
 */
 void player_list_waitOnEmpty(struct player_list_t *list);
 
-void player_list_tick(struct player_list_t *list);
+/*
+* All players in the list have their box duration reduced by 1 turn. 
+* If any box's duration becomes 0, that box is removed from the game.
+*
+* @param list The list whose players need to have their duration reduced
+* @return The number of boxes removed due to their duration becoming 0
+*/
+int player_list_tick(struct player_list_t *list);
 
 #endif
