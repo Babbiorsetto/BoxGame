@@ -700,161 +700,185 @@ void *game(void *arg)
     struct player_list_iterator_t *iterator;
 
     player_list_waitOnEmpty(playerList);
-    error = player_list_iterator_create(playerList, &iterator);
-    if (error)
+    while (1)
     {
-        //TODO
-    }
-
-    boxesLeft = BOX_N;
-    while (boxesLeft > 0)
-    {
-        pthread_mutex_lock(mapLock);
-        currentPlayer = player_list_iterator_next(iterator, &shouldTurnAdvance);
-        
-        // current player is inactive, advance turn if needed but skip their action
-        if (!currentPlayer->active)
+        error = player_list_iterator_create(playerList, &iterator);
+        if (error)
         {
+            //TODO
+        }
+
+        boxesLeft = BOX_N;
+        while (boxesLeft > 0)
+        {
+            pthread_mutex_lock(mapLock);
+            currentPlayer = player_list_iterator_next(iterator, &shouldTurnAdvance);
+            
+            // current player is inactive, advance turn if needed but skip their action
+            if (!currentPlayer->active)
+            {
+                if (shouldTurnAdvance == 1)
+                {
+                    expired = player_list_tick(playerList);
+                    boxesLeft -= expired;
+                }
+                
+                pthread_mutex_unlock(mapLock);
+                continue;
+            }
+            updateMaps();
+            sendUI(currentPlayer);
+
+            char command = getCommand(currentPlayer);
+            switch (command)
+            {
+            case 'n':
+            case 's':
+            case 'e':
+            case 'o':
+                error = calculateMove(gameMap, command, currentPlayer->x, currentPlayer->y, &xCoord, &yCoord);
+                if (error == -1)
+                {
+                    gameError("calculateMove", "wrong parameters", 1, 1);
+                }
+                
+                error = game_map_setPlayer(gameMap, xCoord, yCoord);
+                // player moves to new square
+                if (error == 1)
+                {
+                    game_map_unsetPlayer(gameMap, currentPlayer->x, currentPlayer->y);
+                    currentPlayer->x = xCoord;
+                    currentPlayer->y = yCoord;
+                }
+                // player cannot move to new square due to there being a player
+                else if (error == 2)
+                {
+                    sendMessage(currentPlayer, "That square is occupied by another player.");
+                }
+                // player cannot move to new square due to obstacle
+                else if (error == 3)
+                {
+                    // reveal blocked square on player's map
+                    personal_map_setSymbol(currentPlayer->map, xCoord, yCoord, 'X');
+                    sendMessage(currentPlayer, "You bumped into an obstacle.");
+                }
+                break;
+            case 'p':
+                // player doesn't have a box, can pick up
+                if (currentPlayer->box == 0)
+                {
+                    error = game_map_pickup(gameMap, currentPlayer->x, currentPlayer->y, &boxValue, &boxDuration);
+                    // box was successfully picked up
+                    if (error == 1)
+                    {
+                        currentPlayer->box = boxValue;
+                        currentPlayer->duration = boxDuration;
+                        sendMessage(currentPlayer, "You picked up the box.");
+                    }
+                    // there was no box to pick up
+                    else if (error == 0)
+                    {
+                        sendMessage(currentPlayer, "There is no box to pick up.");
+                    }
+                    // some kind of error
+                    else
+                    {
+                        //TODO
+                    }
+                }
+                // player already had a box
+                else
+                {
+                    sendMessage(currentPlayer, "You already have a box.");
+                }
+                
+                break;
+            case 'd':
+                // player has a box to drop
+                if (currentPlayer->box != 0)
+                {
+                    error = game_map_drop(gameMap, currentPlayer->x, currentPlayer->y, currentPlayer->box, currentPlayer->duration);
+                    // box is dropped, one way or another
+                    if (error >= 1 && error <= 3)
+                    {
+                        currentPlayer->box = 0;
+                        currentPlayer->duration = 0;
+                        boxesLeft--;
+                    }
+                    // box cannot be dropped
+                    else if (error == 4)
+                    {
+                        sendMessage(currentPlayer, "You can't drop the box here.");
+                    }
+
+                    // update score if box is turned in to dropoff
+                    switch (error)
+                    {
+                    case 2:
+                        sendMessage(currentPlayer, "You dropped the box off succesfully!");
+                        currentPlayer->points += 1;
+                        break;
+                    case 3:
+                        currentPlayer->points -= 1;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                // player doesn't have any box
+                else
+                {
+                    sendMessage(currentPlayer, "You have no box to drop.");
+                }
+                
+                break;
+            case 'q':
+            //if the player either quit the game or closed the client
+            case 0:
+                currentPlayer->active = 0;
+                close(currentPlayer->connection);
+                break;
+            default:
+                break;
+            }
+
+            // it is also end turn
             if (shouldTurnAdvance == 1)
             {
                 expired = player_list_tick(playerList);
                 boxesLeft -= expired;
-            }
-            
+            }   
             pthread_mutex_unlock(mapLock);
-            continue;
-        }
-        updateMaps();
-        sendUI(currentPlayer);
-
-        char command = getCommand(currentPlayer);
-        switch (command)
-        {
-        case 'n':
-        case 's':
-        case 'e':
-        case 'o':
-            error = calculateMove(gameMap, command, currentPlayer->x, currentPlayer->y, &xCoord, &yCoord);
-            if (error == -1)
-            {
-                gameError("calculateMove", "wrong parameters", 1, 1);
-            }
-            
-            error = game_map_setPlayer(gameMap, xCoord, yCoord);
-            // player moves to new square
-            if (error == 1)
-            {
-                game_map_unsetPlayer(gameMap, currentPlayer->x, currentPlayer->y);
-                currentPlayer->x = xCoord;
-                currentPlayer->y = yCoord;
-            }
-            // player cannot move to new square due to there being a player
-            else if (error == 2)
-            {
-                sendMessage(currentPlayer, "That square is occupied by another player.");
-            }
-            // player cannot move to new square due to obstacle
-            else if (error == 3)
-            {
-                // reveal blocked square on player's map
-                personal_map_setSymbol(currentPlayer->map, xCoord, yCoord, 'X');
-                sendMessage(currentPlayer, "You bumped into an obstacle.");
-            }
-            break;
-        case 'p':
-            // player doesn't have a box, can pick up
-            if (currentPlayer->box == 0)
-            {
-                error = game_map_pickup(gameMap, currentPlayer->x, currentPlayer->y, &boxValue, &boxDuration);
-                // box was successfully picked up
-                if (error == 1)
-                {
-                    currentPlayer->box = boxValue;
-                    currentPlayer->duration = boxDuration;
-                    sendMessage(currentPlayer, "You picked up the box.");
-                }
-                // there was no box to pick up
-                else if (error == 0)
-                {
-                    sendMessage(currentPlayer, "There is no box to pick up.");
-                }
-                // some kind of error
-                else
-                {
-                    //TODO
-                }
-            }
-            // player already had a box
-            else
-            {
-                sendMessage(currentPlayer, "You already have a box.");
-            }
-            
-            break;
-        case 'd':
-            // player has a box to drop
-            if (currentPlayer->box != 0)
-            {
-                error = game_map_drop(gameMap, currentPlayer->x, currentPlayer->y, currentPlayer->box, currentPlayer->duration);
-                // box is dropped, one way or another
-                if (error >= 1 && error <= 3)
-                {
-                    currentPlayer->box = 0;
-                    currentPlayer->duration = 0;
-                    boxesLeft--;
-                }
-                // box cannot be dropped
-                else if (error == 4)
-                {
-                    sendMessage(currentPlayer, "You can't drop the box here.");
-                }
-
-                // update score if box is turned in to dropoff
-                switch (error)
-                {
-                case 2:
-                    sendMessage(currentPlayer, "You dropped the box off succesfully!");
-                    currentPlayer->points += 1;
-                    break;
-                case 3:
-                    currentPlayer->points -= 1;
-                    break;
-                default:
-                    break;
-                }
-            }
-            // player doesn't have any box
-            else
-            {
-                sendMessage(currentPlayer, "You have no box to drop.");
-            }
-            
-            break;
-        case 'q':
-        //if the player either quit the game or closed the client
-        case 0:
-            currentPlayer->active = 0;
-            close(currentPlayer->connection);
-            break;
-        default:
-            break;
+            nanosleep(&wait, NULL);
         }
 
-        // it is also end turn
-        if (shouldTurnAdvance == 1)
+        player_list_iterator_destroy(iterator);
+        //end of game
+        announceWinner();
+        
+        // resetting logic
+        pthread_mutex_lock(mapLock);
+
+        player_list_purge(playerList);
+        game_map_clear(gameMap);
+        randomizeMap(gameMap, MAP_WIDTH, MAP_HEIGHT);
+        error = 0;
+        player_list_iterator_create(playerList, &iterator);
+        while (error != 1)
         {
-            expired = player_list_tick(playerList);
-            boxesLeft -= expired;
-        }   
+            currentPlayer = player_list_iterator_next(iterator, &error);
+
+            if (currentPlayer != NULL)
+            {
+                pickFreeMapPosition(currentPlayer);
+                game_map_setPlayer(gameMap, currentPlayer->x, currentPlayer->y);
+            }
+            
+        }
+        player_list_iterator_destroy(iterator);
+
         pthread_mutex_unlock(mapLock);
-        nanosleep(&wait, NULL);
     }
-
-    //end of game
-    announceWinner();
-    /*
-    clear inactive players out of the list
-    */
     
 }
 
