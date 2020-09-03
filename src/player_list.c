@@ -255,7 +255,32 @@ void player_list_waitOnEmpty(struct player_list_t *list)
     pthread_mutex_unlock(list->lock);
 }
 
-void player_list_tick(struct player_list_t *list)
+int player_list_tick(struct player_list_t *list)
 {
+    struct player_list_iterator_t *iterator;
+    struct player_alias_t *player;
+    int i = 0;
+    int expired = 0;
 
+    player_list_iterator_create(list, &iterator);
+
+    while (i != 1)
+    {
+        player = player_list_iterator_next(iterator, &i);
+
+        if (player->box != 0)
+        {
+            player->duration -= 1;
+            if (player->duration == 0)
+            {
+                player->box = 0;
+                expired += 1;
+            }
+            
+        }
+        
+    }
+
+    player_list_iterator_destroy(iterator);
+    return expired;
 }

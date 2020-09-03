@@ -27,7 +27,12 @@
 #define LOG_FILE_CREATE_PERMISSIONS S_IRUSR | S_IWUSR
 #define LOG_FILE_OFLAGS O_WRONLY | O_CREAT | O_APPEND
 
-#define GAME_TURNS 30
+#define BOX_N 5
+#define OBSTACLE_CHANCE 2 // chance is 1/OBSTACLE_CHANCE
+#define OBSTACLES_MAX 16
+#define DROPOFF_N 2
+#define DURATION_MIN 3
+#define DURATION_MAX 15
 #define MAP_WIDTH 7
 #define MAP_HEIGHT 7
 
@@ -687,7 +692,8 @@ void *game(void *arg)
     int shouldTurnAdvance;
     int xCoord, yCoord;
     int boxValue, boxDuration;
-    int turnsLeft;
+    int boxesLeft;
+    int expired;
     struct timespec wait = {0, 1000}; 
     struct player_alias_t *currentPlayer;
     struct player_list_iterator_t *iterator;
@@ -699,8 +705,8 @@ void *game(void *arg)
         //TODO
     }
 
-    turnsLeft = GAME_TURNS;
-    while (turnsLeft > 0)
+    boxesLeft = BOX_N;
+    while (boxesLeft > 0)
     {
         pthread_mutex_lock(mapLock);
         currentPlayer = player_list_iterator_next(iterator, &shouldTurnAdvance);
@@ -708,8 +714,12 @@ void *game(void *arg)
         // current player is inactive, advance turn if needed but skip their action
         if (!currentPlayer->active)
         {
-            turnsLeft -= shouldTurnAdvance;
-            player_list_tick(playerList);
+            if (shouldTurnAdvance == 1)
+            {
+                expired = player_list_tick(playerList);
+                boxesLeft -= expired;
+            }
+            
             pthread_mutex_unlock(mapLock);
             continue;
         }
@@ -790,6 +800,7 @@ void *game(void *arg)
                 {
                     currentPlayer->box = 0;
                     currentPlayer->duration = 0;
+                    boxesLeft--;
                 }
                 // box cannot be dropped
                 else if (error == 4)
@@ -829,11 +840,10 @@ void *game(void *arg)
         }
 
         // it is also end turn
-        if (shouldTurnAdvance)
+        if (shouldTurnAdvance == 1)
         {
-            //game_map_tick(gameMap);
-            player_list_tick(playerList);
-            turnsLeft -= 1;
+            expired = player_list_tick(playerList);
+            boxesLeft -= expired;
         }   
         pthread_mutex_unlock(mapLock);
         nanosleep(&wait, NULL);
@@ -995,12 +1005,6 @@ void randomizeMap(struct game_map_t *map, int width, int height)
 {
     int x, y, place, duration;
     int i;
-    const float OBSTACLE_CHANCE = 2; // chance is 1/OBSTACLE_CHANCE
-    const int OBSTACLES_MAX = 16;
-    const int DROPOFF_N = 2;
-    const int BOX_N = 5;
-    const int DURATION_MIN = 3;
-    const int DURATION_MAX = 15;
 
     // place some obstacles
 
@@ -1091,6 +1095,13 @@ void sendUI(struct player_alias_t *currentPlayer)
         }
         
     }
+
+    if (currentPlayer->box != 0)
+    {
+        sprintf(buffer, "You are holding a box numbered %d.\nIt has %d turns left.", currentPlayer->box, currentPlayer->duration);
+        sendMessage(currentPlayer, buffer);
+    }
+    
     player_list_iterator_destroy(iterator);
 }
 
