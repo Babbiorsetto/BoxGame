@@ -1234,9 +1234,17 @@ void announceWinner()
 
 void gameLog(char *message)
 {
+    time_t rawtime;
+    struct tm *timeinfo;
     int stringLength = strlen(message), error = 0;
     char newline = '\n';
+    char buffer[50];
 
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+    strcpy(buffer, asctime(timeinfo));
+
+    writeNBytes(logFile, buffer, (int) strlen(buffer));
     writeNBytes(logFile, message, stringLength);
     writeNBytes(logFile, &newline, 1);
     return;
