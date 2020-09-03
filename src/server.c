@@ -25,6 +25,11 @@
 #define USER_FILE_OFLAGS O_WRONLY | O_CREAT | O_APPEND
 
 #define GAME_TURNS 30
+#define OBSTACLE_CHANCE 2 // chance is 1/OBSTACLE_CHANCE
+#define OBSTACLES_MAX 16
+#define DROPOFF_N 2
+#define DURATION_MIN 3
+#define DURATION_MAX 15
 #define MAP_WIDTH 7
 #define MAP_HEIGHT 7
 
@@ -984,12 +989,6 @@ void randomizeMap(struct game_map_t *map, int width, int height)
 {
     int x, y, place, duration;
     int i;
-    const float OBSTACLE_CHANCE = 2; // chance is 1/OBSTACLE_CHANCE
-    const int OBSTACLES_MAX = 16;
-    const int DROPOFF_N = 2;
-    const int BOX_N = 5;
-    const int DURATION_MIN = 3;
-    const int DURATION_MAX = 15;
 
     // place some obstacles
 
