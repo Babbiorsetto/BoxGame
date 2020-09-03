@@ -179,3 +179,19 @@ void personal_map_update(struct personal_map_t *map)
         }
     }
 }
+
+void personal_map_clear(struct personal_map_t *map)
+{
+    int refW = game_map_getWidth(map->reference), refH = game_map_getHeight(map->reference);
+    int i, j;
+
+    for (i = 0; i < refH; i++)
+    {
+        for (j = 0; j < refW; j++)
+        {
+            personal_map_setSymbol(map, i, j, '-');
+        }
+        
+    }
+    
+}

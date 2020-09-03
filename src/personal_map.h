@@ -63,4 +63,11 @@ int personal_map_setSymbol(struct personal_map_t *map, int x, int y, char symbol
 */
 void personal_map_update(struct personal_map_t *map);
 
+/*
+* Clears given personal_map from all symbols. Mostly useful for obstacles.
+* 
+* @param name map
+*/
+void personal_map_clear(struct personal_map_t *map);
+
 #endif
