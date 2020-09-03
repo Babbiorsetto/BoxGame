@@ -61,6 +61,7 @@ void updateMaps();
 void pickFreeMapPosition(struct player_alias_t *player);
 void sig_int(int signal);
 void buildPlayersString(char *out, struct player_alias_t *currentPlayer);
+void announceWinner();
 /**/
 struct connection_info{
     int fd;
@@ -839,7 +840,8 @@ void *game(void *arg)
     }
 
     //end of game
-    /*TODO tally the scores and announce the winner
+    announceWinner();
+    /*
     clear inactive players out of the list
     */
     
@@ -1141,4 +1143,55 @@ void updateMaps()
         personal_map_update(player->map);
     }
     player_list_iterator_destroy(iterator);
+}
+
+void announceWinner()
+{
+    struct player_list_iterator_t *iterator;
+    struct player_alias_t *player;
+    int i = 0;
+    int max = 0;
+    int draw = 0;
+    char winner[30];
+    char message[50];
+
+    player_list_iterator_create(playerList, &iterator);
+
+    while (i != 1)
+    {
+        player = player_list_iterator_next(iterator, &i);
+
+        if (player->points > max)
+        {
+            max = player->points;
+            strcpy(winner, player->username);
+            draw = 0;
+        }
+        else if (player->points == max)
+        {
+            draw = 1;
+        }
+        
+    }
+
+    if (draw == 0)
+    {
+        sprintf(message, "%s wins!", winner);
+    }
+    else
+    {
+        strcpy(message, "It's a draw");
+    }
+    
+    i = 0;
+    while (i != 1)
+    {
+        player = player_list_iterator_next(iterator, &i);
+
+        sendMessage(player, message);
+        sendMessage(player, "Setting up next game...");
+    }
+
+    player_list_iterator_destroy(iterator);
+    
 }
