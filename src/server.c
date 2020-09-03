@@ -83,6 +83,7 @@ int logFile;
 int main(int argc, char const *argv[])
 {
     signal(SIGINT, sig_int);
+    signal(SIGPIPE, SIG_IGN);
     struct sockaddr_in *serverAddress;
     srand(time(0));
 
