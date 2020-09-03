@@ -57,3 +57,4 @@ dkms.conf
 /bin
 userCredentials
 /debug
+logFile
