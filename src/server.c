@@ -19,10 +19,13 @@
 #define PORT_NUMBER_POSITION 1
 #define CONNECTION_QUEUE_SIZE 5
 #define USER_CREDENTIALS_FILE "userCredentials"
+#define LOG_FILE "logFile"
 #define USERNAME_SIZE 30
 #define PASSWORD_SIZE 30
 #define USER_FILE_CREATE_PERMISSIONS S_IRUSR | S_IWUSR
 #define USER_FILE_OFLAGS O_WRONLY | O_CREAT | O_APPEND
+#define LOG_FILE_CREATE_PERMISSIONS S_IRUSR | S_IWUSR
+#define LOG_FILE_OFLAGS O_WRONLY | O_CREAT | O_APPEND
 
 #define BOX_N 5
 #define OBSTACLE_CHANCE 2 // chance is 1/OBSTACLE_CHANCE
@@ -62,6 +65,7 @@ void pickFreeMapPosition(struct player_alias_t *player);
 void sig_int(int signal);
 void buildPlayersString(char *out, struct player_alias_t *currentPlayer);
 void announceWinner();
+void gameLog(char *message);
 /**/
 struct connection_info{
     int fd;
@@ -74,6 +78,7 @@ struct game_map_t *gameMap;
 int writeOnlyUsersFile;
 pthread_mutex_t *fileLock;
 pthread_mutex_t *mapLock;
+int logFile;
 
 int main(int argc, char const *argv[])
 {
@@ -212,6 +217,12 @@ void setupMemory(struct sockaddr_in **address)
     if (writeOnlyUsersFile == -1)
     {
         gameError("open", strcat("cannot open ", USER_CREDENTIALS_FILE), 1, 1);
+    }
+
+    logFile = open(LOG_FILE, LOG_FILE_OFLAGS, LOG_FILE_CREATE_PERMISSIONS);
+    if (logFile == -1)
+    {
+        gameError("open", strcat("cannot open ", LOG_FILE), 1, 1);
     }
 
     fileLock = malloc(sizeof(pthread_mutex_t));
@@ -1194,4 +1205,14 @@ void announceWinner()
 
     player_list_iterator_destroy(iterator);
     
+}
+
+void gameLog(char *message)
+{
+    int stringLength = strlen(message), error = 0;
+    char newline = '\n';
+
+    writeNBytes(logFile, message, stringLength);
+    writeNBytes(logFile, &newline, 1);
+    return;
 }
