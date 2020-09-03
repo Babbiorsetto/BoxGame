@@ -79,4 +79,11 @@ int game_map_setDropoff(struct game_map_t *map, unsigned int x, unsigned int y, 
 
 int game_map_tick(struct game_map_t *map);
 
+/*
+* Removes all information from this game_map. 
+* It will contain no players, obstacles etc. afterwards
+*
+*/
+void game_map_clear(struct game_map_t *map);
+
 #endif

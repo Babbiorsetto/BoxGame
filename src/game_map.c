@@ -207,6 +207,18 @@ int game_map_setObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
     map->data[x * map->width + y] = val | OBSTACLE_BITMASK;
 }
 
+int game_map_unsetObstacle(struct game_map_t *map, unsigned int x, unsigned int y)
+{
+    if (x >= map->height || y >= map->width)
+    {
+        return -1;
+    }
+
+    unsigned short val = map->data[x * map->width + y];
+    map->data[x * map->width + y] = val & ~(OBSTACLE_BITMASK);
+    return 0;
+}
+
 int game_map_setBox(struct game_map_t *map, unsigned int x, unsigned int y, unsigned short number, unsigned short duration)
 {
     if (x < 0 || x >= map->height || y < 0 || y >= map->width || duration < 0 || duration > 15 || number < 0 || number > 3)
@@ -294,5 +306,17 @@ int game_map_drop(struct game_map_t *map, unsigned int x, unsigned int y, int nu
     }
     
     return -1;
+    
+}
+
+void game_map_clear(struct game_map_t *map)
+{
+    int length = game_map_getHeight(map) * game_map_getWidth(map);
+    int i, j;
+
+    for (i = 0; i < length; i++)
+    {
+        map->data[i] = 0u;
+    }
     
 }
