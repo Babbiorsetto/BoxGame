@@ -210,7 +210,7 @@ void player_list_purge(struct player_list_t *list)
             curr->player->points = 0;
             curr->player->box = 0;
             curr->player->duration = 0;
-            personal_map_clear(curr->player);
+            personal_map_clear(curr->player->map);
 
             if (!(curr->player->active))
             {
@@ -244,7 +244,7 @@ void player_list_purge(struct player_list_t *list)
         curr->player->points = 0;
         curr->player->box = 0;
         curr->player->duration = 0;
-        personal_map_clear(curr->player);
+        personal_map_clear(curr->player->map);
 
         // reached the last position
         if (!(curr->player->active))
