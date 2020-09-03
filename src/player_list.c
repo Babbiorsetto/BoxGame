@@ -273,7 +273,7 @@ int player_list_tick(struct player_list_t *list)
             player->duration -= 1;
             if (player->duration == 0)
             {
-                player->box == 0;
+                player->box = 0;
                 expired += 1;
             }
             
