@@ -174,6 +174,8 @@ void userQuery(int socketDescriptor)
 
 		bufferToString(buffer, password);
 
+		printf("Contacting the server...\n");
+
 		error = write(socketDescriptor, &command, 1);
 		checkSocketError(error, socketDescriptor);
 
