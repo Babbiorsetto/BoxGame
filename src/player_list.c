@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include "player_alias.h"
 #include "player_list.h"
+#include "personal_map.h"
 
 struct player_list_t
 {
@@ -204,6 +205,12 @@ void player_list_purge(struct player_list_t *list)
 
         while (curr->next != NULL)
         {
+            curr->player->x = 0;
+            curr->player->y = 0;
+            curr->player->points = 0;
+            curr->player->box = 0;
+            curr->player->duration = 0;
+            personal_map_clear(curr->player);
 
             if (!(curr->player->active))
             {
