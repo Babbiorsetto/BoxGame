@@ -34,6 +34,7 @@ int main(int argc, const char *argv[])
 {
 	struct sockaddr_in address;
 
+	checkArgumentNumber(argc);
 	preparaIndirizzo(&address, argv[1], extractPortNumber(argv));
 	connection(&socketDescriptor, &address);
 	userQuery(socketDescriptor);
