@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <time.h>
+#include <arpa/inet.h>
 #include "signal.h"
 #include "player_list.h"
 #include "player_alias.h"
@@ -88,6 +89,7 @@ int main(int argc, char const *argv[])
     srand(time(0));
 
     setupMemory(&serverAddress);
+    gameLog("server starting");
     processArguments(argc, argv, serverAddress);
     randomizeMap(gameMap, MAP_WIDTH, MAP_HEIGHT);
     startGameThread();
@@ -98,6 +100,7 @@ int main(int argc, char const *argv[])
 
 void sig_int(int signal)
 {
+    gameLog("server stopped by SIGINT");
     exit(0);
 }
 
@@ -184,6 +187,7 @@ void gameError(char const *functionName, char const *customMessage, int shouldEx
     fprintf(stderr, "%s error: %s\n", functionName, customMessage);
     if (shouldExit)
     {
+        gameLog("exiting on error");
         exit(exitStatus);
     }
     
@@ -202,6 +206,12 @@ void gameError(char const *functionName, char const *customMessage, int shouldEx
 */
 void setupMemory(struct sockaddr_in **address)
 {
+    logFile = open(LOG_FILE, LOG_FILE_OFLAGS, LOG_FILE_CREATE_PERMISSIONS);
+    if (logFile == -1)
+    {
+        gameError("open", strcat("cannot open ", LOG_FILE), 1, 1);
+    }
+
     int error = player_list_create(&playerList);
     if (error)
     {
@@ -218,12 +228,6 @@ void setupMemory(struct sockaddr_in **address)
     if (writeOnlyUsersFile == -1)
     {
         gameError("open", strcat("cannot open ", USER_CREDENTIALS_FILE), 1, 1);
-    }
-
-    logFile = open(LOG_FILE, LOG_FILE_OFLAGS, LOG_FILE_CREATE_PERMISSIONS);
-    if (logFile == -1)
-    {
-        gameError("open", strcat("cannot open ", LOG_FILE), 1, 1);
     }
 
     fileLock = malloc(sizeof(pthread_mutex_t));
@@ -277,6 +281,7 @@ pthread_t startGameThread()
     int error;
     pthread_t newId;
 
+    gameLog("starting game thread");
     error = pthread_create(&newId, NULL, game, NULL);
     if (error)
     {
@@ -300,6 +305,7 @@ void waitForConnections(struct sockaddr_in *address)
     pthread_attr_t threadAttributes;
     pthread_t id;
     struct connection_info *connectionInfo;
+    char message[30];
 
     int socketDescriptor = socket(AF_INET, SOCK_STREAM, 0);
     if (socketDescriptor == -1)
@@ -313,6 +319,8 @@ void waitForConnections(struct sockaddr_in *address)
         gameError("bind", "cannot bind address to socket", 1, 1);
     }
     
+    sprintf(message, "listening on port %d", ntohs(address->sin_port));
+    gameLog(message);
     error = listen(socketDescriptor, CONNECTION_QUEUE_SIZE);
     if (error)
     {
@@ -370,10 +378,15 @@ void *handleConnection(void *data)
     int dataSize;
     char username[USERNAME_SIZE];
     char password[PASSWORD_SIZE];
+    char ip[16];
+    char message[100];
 
     struct connection_info *connectionInfo = (struct connection_info *)data;
     int clientDescriptor = connectionInfo->fd;
 
+    inet_ntop(AF_INET, connectionInfo->address, ip, 16);
+    sprintf(message, "connection from %s", ip);
+    gameLog(message);
     int again = 1;
     while (again)
     {
@@ -444,6 +457,8 @@ void *handleConnection(void *data)
                     writeNBytes(clientDescriptor, &response, 1);
                     pthread_mutex_unlock(mapLock);
                     player_alias_destroy(alias);
+                    sprintf(message, "%s tried to join but was already in (%s)", username, ip);
+                    gameLog(message);
                 }
                 else
                 {
@@ -457,6 +472,8 @@ void *handleConnection(void *data)
                     if (error == 1)
                     {
                         game_map_setPlayer(gameMap, alias->x, alias->y);
+                        sprintf(message, "%s is joining (%s)", username, ip);
+                        gameLog(message);
                     }
                     
                     response = 't';
@@ -472,6 +489,8 @@ void *handleConnection(void *data)
             {
                 response = 'f';
                 writeNBytes(clientDescriptor, &response, 1);
+                sprintf(message, "%s failed to authenticate (%s)", username, ip);
+                gameLog(message);
             }
             
             break;
@@ -488,6 +507,8 @@ void *handleConnection(void *data)
                 free(connectionInfo->address);
                 free(connectionInfo);
                 again = 0;
+                sprintf(message, "%s registered (%s)", username, ip);
+                gameLog(message);
             }
             // warn client and go back to getting credentials
             else
@@ -699,6 +720,10 @@ void *game(void *arg)
     struct timespec wait = {0, 1000}; 
     struct player_alias_t *currentPlayer;
     struct player_list_iterator_t *iterator;
+    char message[100];
+
+    sprintf(message, "new game");
+    gameLog(message);
 
     player_list_waitOnEmpty(playerList);
     while (1)
@@ -722,6 +747,11 @@ void *game(void *arg)
                 {
                     expired = player_list_tick(playerList);
                     boxesLeft -= expired;
+                    if (expired > 0)
+                    {
+                        sprintf(message, "%d box%s expired", expired, expired > 1 ? "es" : "");
+                        gameLog(message);
+                    }
                 }
                 
                 pthread_mutex_unlock(mapLock);
@@ -817,6 +847,8 @@ void *game(void *arg)
                     {
                     case 2:
                         sendMessage(currentPlayer, "You dropped the box off succesfully!");
+                        sprintf(message, "%s turned a box in", currentPlayer->username);
+                        gameLog(message);
                         currentPlayer->points += 1;
                         break;
                     case 3:
@@ -838,6 +870,8 @@ void *game(void *arg)
             case 0:
                 currentPlayer->active = 0;
                 close(currentPlayer->connection);
+                sprintf(message, "%s left", currentPlayer->username);
+                gameLog(message);
                 break;
             default:
                 break;
@@ -848,11 +882,18 @@ void *game(void *arg)
             {
                 expired = player_list_tick(playerList);
                 boxesLeft -= expired;
+                if (expired > 0)
+                {
+                    sprintf(message, "%d box%s expired", expired, expired > 1 ? "es" : "");
+                    gameLog(message);
+                }
             }   
             pthread_mutex_unlock(mapLock);
             nanosleep(&wait, NULL);
         }
 
+        sprintf(message, "game over");
+        gameLog(message);
         player_list_iterator_destroy(iterator);
         //end of game
         announceWinner();
@@ -1238,15 +1279,16 @@ void gameLog(char *message)
     time_t rawtime;
     struct tm *timeinfo;
     int stringLength = strlen(message), error = 0;
-    char newline = '\n';
-    char buffer[50];
+    char buffer[150];
 
     time(&rawtime);
     timeinfo = localtime(&rawtime);
-    strcpy(buffer, asctime(timeinfo));
+    strcpy(buffer, "[");
+    strncat(buffer, asctime(timeinfo), 24);
+    strcat(buffer, "]");
+    strcat(buffer, message);
+    strcat(buffer, "\n");
 
-    writeNBytes(logFile, buffer, (int) strlen(buffer));
-    writeNBytes(logFile, message, stringLength);
-    writeNBytes(logFile, &newline, 1);
+    writeNBytes(logFile, buffer, strlen(buffer));
     return;
 }
