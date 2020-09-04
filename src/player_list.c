@@ -295,7 +295,7 @@ int player_list_tick(struct player_list_t *list)
     return expired;
 }
 
-void player_list_reset_players(struct player_list_t *list)
+void player_list_resetPlayers(struct player_list_t *list)
 {
     struct player_node_t *curr = NULL;
 

@@ -96,6 +96,7 @@ int player_list_tick(struct player_list_t *list);
 * @param list The player list that must be reset
 * @return void
 */
-void player_list_reset_players(struct player_list_t *list);
+void player_list_resetPlayers(struct player_list_t *list);
+
 
 #endif
