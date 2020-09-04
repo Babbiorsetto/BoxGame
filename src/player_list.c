@@ -294,3 +294,37 @@ int player_list_tick(struct player_list_t *list)
     player_list_iterator_destroy(iterator);
     return expired;
 }
+
+void player_list_reset_players(struct player_list_t *list)
+{
+    struct player_node_t *curr = NULL;
+
+    if(list == NULL)
+    {
+        exit(1);
+    }
+
+    pthread_mutex_lock(list->lock);
+
+    if(list->first == NULL)
+    {
+        pthread_mutex_unlock(list->lock);
+        return;
+    }
+
+    curr = list->first;
+
+    while(curr != NULL)
+    {
+        curr->player->x = 0;
+        curr->player->y = 0;
+        curr->player->points = 0;
+        curr->player->box = 0;
+        curr->player->duration = 0;
+        personal_map_clear(curr->player->map);
+
+        curr = curr->next;
+    }
+    pthread_mutex_unlock(list->lock);
+    return;
+}

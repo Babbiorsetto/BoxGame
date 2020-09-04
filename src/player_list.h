@@ -91,4 +91,11 @@ void player_list_waitOnEmpty(struct player_list_t *list);
 */
 int player_list_tick(struct player_list_t *list);
 
+/*
+* Empties all data regarding the players in the given players list.
+* @param list The player list that must be reset
+* @return void
+*/
+void player_list_reset_players(struct player_list_t *list);
+
 #endif
