@@ -203,7 +203,7 @@ void player_list_purge(struct player_list_t *list)
         curr = list->first;
         prev = list->first;
 
-        while (curr->next != NULL)
+        while (curr != NULL)
         {
             curr->player->x = 0;
             curr->player->y = 0;
@@ -234,25 +234,21 @@ void player_list_purge(struct player_list_t *list)
                     curr = prev->next;
                 }
             }
-
-            prev = curr;
-            curr = curr->next;
         }
         
-        curr->player->x = 0;
-        curr->player->y = 0;
-        curr->player->points = 0;
-        curr->player->box = 0;
-        curr->player->duration = 0;
-        personal_map_clear(curr->player->map);
+        prev->player->x = 0;
+        prev->player->y = 0;
+        prev->player->points = 0;
+        prev->player->box = 0;
+        prev->player->duration = 0;
+        personal_map_clear(prev->player->map);
 
         // reached the last position
-        if (!(curr->player->active))
+        if (!(prev->player->active))
         { //if the last player in the list is inactive, it will be removed
-            free(curr->player->address);
-            player_alias_destroy(curr->player);
-            free(curr);
-            prev = NULL;
+            free(prev->player->address);
+            player_alias_destroy(prev->player);
+            free(prev);
         }
         pthread_mutex_unlock(list->lock);
     }
