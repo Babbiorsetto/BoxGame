@@ -1056,7 +1056,7 @@ void randomizeMap(struct game_map_t *map, int width, int height)
         x = randInRangeIncluded(0, height-1);
         y = randInRangeIncluded(0, width-1);
 
-        if (game_map_hasObstacle(map, x, y) == 0)
+        if (game_map_hasObstacle(map, x, y) == 0 && game_map_hasDropoff(map, x, y) == 0)
         {
             game_map_setDropoff(map, x, y, 1);
             i++;
@@ -1072,7 +1072,7 @@ void randomizeMap(struct game_map_t *map, int width, int height)
         y = randInRangeIncluded(0, width-1);
         duration = randInRangeIncluded(DURATION_MIN, DURATION_MAX);
 
-        if (game_map_hasObstacle(map, x, y) == 0 && game_map_hasDropoff(map, x, y) == 0)
+        if (game_map_hasObstacle(map, x, y) == 0 && game_map_hasDropoff(map, x, y) == 0 && game_map_hasBox(map, x, y) == 0)
         {
             game_map_setBox(map, x, y, 1, duration);
             i++;
