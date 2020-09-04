@@ -328,3 +328,26 @@ void player_list_resetPlayers(struct player_list_t *list)
     pthread_mutex_unlock(list->lock);
     return;
 }
+
+int player_list_count(struct player_list_t *list)
+{
+    struct player_node_t *curr;
+    int n = 0;
+
+    pthread_mutex_lock(list->lock);
+    if (list->first == NULL)
+    {
+        pthread_mutex_unlock(list->lock);
+        return 0;
+    }
+    
+    curr = list->first;
+
+    while (curr != NULL)
+    {
+        n++;
+        curr = curr->next;
+    }
+    pthread_mutex_unlock(list->lock);
+    return n;
+}

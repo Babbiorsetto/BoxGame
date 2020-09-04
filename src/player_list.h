@@ -98,5 +98,6 @@ int player_list_tick(struct player_list_t *list);
 */
 void player_list_resetPlayers(struct player_list_t *list);
 
+int player_list_count(struct player_list_t *list);
 
 #endif
