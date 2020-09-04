@@ -440,10 +440,10 @@ void *handleConnection(void *data)
                 // they're already present and active
                 if(error == 0)
                 {
-                    pthread_mutex_unlock(mapLock);
                     response = 'a';
-                    player_alias_destroy(alias);
                     writeNBytes(clientDescriptor, &response, 1);
+                    pthread_mutex_unlock(mapLock);
+                    player_alias_destroy(alias);
                 }
                 else
                 {
@@ -459,11 +459,11 @@ void *handleConnection(void *data)
                         game_map_setPlayer(gameMap, alias->x, alias->y);
                     }
                     
-                    pthread_mutex_unlock(mapLock);
                     response = 't';
+                    writeNBytes(clientDescriptor, &response, 1);
+                    pthread_mutex_unlock(mapLock);
                     free(connectionInfo);
                     again = 0;
-                    writeNBytes(clientDescriptor, &response, 1);
                 }
                 
                 
