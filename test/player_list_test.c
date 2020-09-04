@@ -77,6 +77,149 @@ MunitResult player_list_iterator_next_test(const MunitParameter params[], void *
     return MUNIT_OK;
 }
 
+MunitResult player_list_count_test(const MunitParameter params[], void *data)
+{
+    struct player_list_t *list = (struct player_list_t *)data;
+    int i;
+    struct player_alias_t *player;
+    
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 0);
+
+    player = player_alias_create("Tuc", NULL, 0, NULL);
+    player_list_add(list, player);
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 1);
+
+    player = player_alias_create("Tac", NULL, 1, NULL);
+    player_list_add(list, player);
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 2);
+
+    return MUNIT_OK;
+}
+
+MunitResult player_list_purge_removeFirstAndOnly_test(const MunitParameter params[], void *data)
+{
+    struct player_list_t *list = (struct player_list_t *)data;
+    int i;
+    struct player_alias_t *player;
+    struct game_map_t *gameMap;
+
+    game_map_create(&gameMap, 1, 1);
+    player = player_alias_create("Sancho", NULL, 0, gameMap);
+    player->active = 0;
+    player_list_add(list, player);
+    player_list_purge(list);
+
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 0);
+
+    game_map_destroy(gameMap);
+
+    return MUNIT_OK;
+}
+
+MunitResult player_list_purge_dontRemoveFirstAndOnly_test(const MunitParameter params[], void *data)
+{
+    struct player_list_t *list = (struct player_list_t *)data;
+    int i;
+    struct player_alias_t *player;
+    struct game_map_t *gameMap;
+
+    game_map_create(&gameMap, 1, 1);
+
+    player = player_alias_create("Sancho", NULL, 0, gameMap);
+    player->active = 1;
+    player_list_add(list, player);
+    player_list_purge(list);
+
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 1);
+    game_map_destroy(gameMap);
+
+    return MUNIT_OK;
+}
+
+MunitResult player_list_purge_removeOnlyFirstOfMany_test(const MunitParameter params[], void *data)
+{
+    struct player_list_t *list = (struct player_list_t *)data;
+    int i;
+    struct player_alias_t *player;
+    struct game_map_t *gameMap;
+
+    game_map_create(&gameMap, 1, 1);
+
+    player = player_alias_create("Sancho", NULL, 0, gameMap);
+    player->active = 0;
+    player_list_add(list, player);
+    player = player_alias_create("Panza", NULL, 0, gameMap);
+    player->active = 1;
+    player_list_add(list, player);
+
+    player_list_purge(list);
+
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 1);
+    game_map_destroy(gameMap);
+
+    return MUNIT_OK;
+}
+
+MunitResult player_list_purge_removeOnlyLastOfMany_test(const MunitParameter params[], void *data)
+{
+    struct player_list_t *list = (struct player_list_t *)data;
+    int i;
+    struct player_alias_t *player;
+    struct game_map_t *gameMap;
+
+    game_map_create(&gameMap, 1, 1);
+
+    player = player_alias_create("Sancho", NULL, 0, gameMap);
+    player->active = 1;
+    player_list_add(list, player);
+    player = player_alias_create("Panza", NULL, 0, gameMap);
+    player->active = 0;
+    player_list_add(list, player);
+
+    player_list_purge(list);
+
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 1);
+    game_map_destroy(gameMap);
+
+    return MUNIT_OK;
+}
+
+MunitResult player_list_purge_removeOnlyMiddle_test(const MunitParameter params[], void *data)
+{
+    struct player_list_t *list = (struct player_list_t *)data;
+    int i;
+    struct player_alias_t *player;
+    struct game_map_t *gameMap;
+
+    game_map_create(&gameMap, 1, 1);
+
+    player = player_alias_create("Sancho", NULL, 0, gameMap);
+    player->active = 1;
+    player_list_add(list, player);
+    player = player_alias_create("Panza", NULL, 0, gameMap);
+    player->active = 0;
+    player_list_add(list, player);
+    player = player_alias_create("Zorro", NULL, 0, gameMap);
+    player->active = 1;
+    player_list_add(list, player);
+    
+
+    player_list_purge(list);
+
+    i = player_list_count(list);
+    munit_assert_int(i, ==, 2);
+    game_map_destroy(gameMap);
+
+    return MUNIT_OK;
+}
+
 
 /* test array */
 
@@ -85,6 +228,11 @@ MunitTest player_list_tests[] =
     {"/create", player_list_create_test, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL},
     {"/iterator_create", player_list_iterator_create_test, player_list_test_setup, player_list_test_teardown, MUNIT_TEST_OPTION_NONE, NULL},
     {"/iterator_next", player_list_iterator_next_test, player_list_test_setup, player_list_test_teardown, MUNIT_TEST_OPTION_NONE, NULL},
+    {"/purge_removeFirstAndOnly", player_list_purge_removeFirstAndOnly_test, player_list_test_setup, player_list_test_teardown, MUNIT_TEST_OPTION_NONE, NULL},
+    {"/purge_dontRemoveFirstAndOnly", player_list_purge_dontRemoveFirstAndOnly_test, player_list_test_setup, player_list_test_teardown, MUNIT_TEST_OPTION_NONE, NULL},
+    {"/purge_removeOnlyFirstOfMany", player_list_purge_removeOnlyFirstOfMany_test, player_list_test_setup, player_list_test_teardown, MUNIT_TEST_OPTION_NONE, NULL},
+    {"/purge_removeOnlyLastOfMany", player_list_purge_removeOnlyLastOfMany_test, player_list_test_setup, player_list_test_teardown, MUNIT_TEST_OPTION_NONE, NULL},
+    {"/purge_removeOnlyMiddle", player_list_purge_removeOnlyMiddle_test, player_list_test_setup, player_list_test_teardown, MUNIT_TEST_OPTION_NONE, NULL},
     {NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL}
 };
 

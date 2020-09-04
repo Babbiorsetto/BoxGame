@@ -861,6 +861,7 @@ void *game(void *arg)
         pthread_mutex_lock(mapLock);
 
         player_list_purge(playerList);
+        player_list_resetPlayers(playerList);
         game_map_clear(gameMap);
         randomizeMap(gameMap, MAP_WIDTH, MAP_HEIGHT);
         error = 0;

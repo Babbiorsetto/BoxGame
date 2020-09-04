@@ -199,20 +199,13 @@ void player_list_purge(struct player_list_t *list)
     pthread_mutex_lock(list->lock);
     if (list->first != NULL)
     {
-
         curr = list->first;
         prev = list->first;
 
         while (curr != NULL)
         {
-            curr->player->x = 0;
-            curr->player->y = 0;
-            curr->player->points = 0;
-            curr->player->box = 0;
-            curr->player->duration = 0;
-            personal_map_clear(curr->player->map);
 
-            if (!(curr->player->active))
+            if (curr->player->active == 0)
             {
                 // the player to remove is in first position
                 if (curr == list->first)
@@ -224,7 +217,7 @@ void player_list_purge(struct player_list_t *list)
                     curr = list->first;
                     prev = curr;
                 }
-                // every other position except for last
+                // every other position including last
                 else
                 {
                     prev->next = curr->next;
@@ -234,24 +227,14 @@ void player_list_purge(struct player_list_t *list)
                     curr = prev->next;
                 }
             }
+            else
+            {
+                prev = curr;
+                curr = curr->next;
+            }
         }
-        
-        prev->player->x = 0;
-        prev->player->y = 0;
-        prev->player->points = 0;
-        prev->player->box = 0;
-        prev->player->duration = 0;
-        personal_map_clear(prev->player->map);
-
-        // reached the last position
-        if (!(prev->player->active))
-        { //if the last player in the list is inactive, it will be removed
-            free(prev->player->address);
-            player_alias_destroy(prev->player);
-            free(prev);
-        }
-        pthread_mutex_unlock(list->lock);
     }
+    pthread_mutex_unlock(list->lock);
     return;
 }
 
