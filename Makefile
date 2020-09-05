@@ -61,7 +61,7 @@ $(CLIENT_DEBUG): $(DBG_PATH)/client.o
 # phony rules
 .PHONY: none
 none:
-	@echo 'specify a target: bin/client, bin/server, bin/test, clean, distclean'
+	@echo 'specify a target: install, devinstall, bin/client, bin/server, bin/test, clean, distclean'
 
 .PHONY: clean
 clean:
@@ -72,3 +72,11 @@ clean:
 distclean:
 	@echo CLEAN $(DISTCLEAN_LIST)
 	@rm -f $(DISTCLEAN_LIST)
+
+.PHONY: install
+install:
+	mkdir bin obj
+
+.PHONY: devinstall
+devinstall: install
+	mkdir debug libs libs/munit
