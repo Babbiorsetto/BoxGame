@@ -1,0 +1,15 @@
+0. Copertina
+Relazione blabla
+componenti
+Alessandro Rubino
+Marco Filippo Sameh(?) Losbefero
+
+1. Guida d'uso
+Compilazione
+La compilazione si avvale del programma a linea di comando make e del compilatore gcc. Nella directory di lavoro "BoxGame", eseguire il comando "make install" per creare le directory necessarie alla compilazione. Per compilare server e client eseguire "make bin/server" e "make bin/client".
+Esecuzione
+Una volta compilati, lanciare il server con "./bin/server PORT_N" dove PORT_N è un intero compreso fra 1024 e 65535. Mentre il server è in esecuzione, lanciare il client con "./bin/client IP_ADDRESS PORT_N" dove IP_ADDRESS è un indirizzo IPv4 valido identificativo della macchina che esegue il server e PORT_N è il port number scelto per il server.
+Il client presenterà un'interfaccia che permette la scelta fra registrazione e login. Se non si possiede un account, selezionare registrazione con la modalità indicata sul terminale e inserire le credenziali. Se lo username inserito è disponibile, la registrazione verrà effettuata e si potrà accedere al gioco. Riavviare il client ed effettuare il login. Attendere che il client comunichi il successo del login e inserisca il giocatore nella partita.
+Durante il gioco, il client visualizzerà la mappa, i giocatori connessi, i loro punteggi e il giocatore di turno. Queste informazioni saranno aggiornate ogni volta che un giocatore effettuerà(?) il proprio turno. La propria posizione è indicata da una "Y" sulla mappa, quella degli altri giocatori da una "P". I pacchi sono indicati con "1", i punti di consegna con "A", gli ostacoli scoperti da una "X". Le caselle navigabili e gli ostacoli ancora nascosti sono "-".
+Quando arriva il turno del giocatore, l'interfaccia visualizzerà i comandi disponibili. Non è possibile prendere un pacco se non è presente nella casella attuale. Non è possibile abbandonare un pacco in una casella che non sia di consegna. Non è possibile muoversi nella casella dove è presente un altro giocatore o un ostacolo. Tentare queste azioni comporterà la perdita del turno attuale. Il movimento verso un bordo della mappa porta al punto corrispondente dal lato opposto.
+Qualora un giocatore abbandoni una partita in corso, potrà rientrare conservando il proprio punteggio effettuando nuovamente il login entro la fine della partita Al termine di una partita il server genererà una nuova sessione. I giocatori connessi verranno inseriti nella nuova partita, i disconnessi saranno eliminati.
