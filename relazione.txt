@@ -2,14 +2,36 @@
 Relazione blabla
 componenti
 Alessandro Rubino
-Marco Filippo Sameh(?) Losbefero
+Marco Filippo Sameh Losbefero
 
 1. Guida d'uso
+Descrizione del gioco
+BoxGame è un gioco eseguibile su piattaforma bash Linux(???) realizzato in modalità client/server. 
+Il server mantiene tutte le informazioni necessarie al progresso della partita e relative agli account dei giocatori, si occupa sia dell'hostaggio delle sessioni di gioco, sia del login e della registrazione dei giocatori.
+Il client consente al giocatore di collegarsi al server per registrarsi o effettuare il login e conseguentemente giocare. Ogni giocatore è dotato di una copia(?) del client di gioco dal quale può connettersi al servizio(?) del server.
+All'inizio della partita i giocatori si troverano collocati su una mappa bidimensionale, in cui sono presenti pacchi(o scatole) da consegnare, i punti di consegna e gli ostacoli, oltre ai giocatori stessi. 
+La partita prosegue a turni, ad ogni giocatore viene assegnato un turno in cui può muoversi in una direzione(N, S, E, O), raccogliere una scatola o depositarla.
+Ognuna delle azioni descritte costa un turno. Inoltre, se un giocatore tenta di muoversi in una casella occupata da un ostacolo o da un altro giocatore, egli perderà il turno senza essersi mosso.
+Ad ogni pacco è assegnata una precisa scadenza, cioè un numero di turni dopo la raccolta da parte del giocatore al cui scadere il pacco sparisce. 
+Nel momento in cui raccoglie un pacco, il giocatore ha a disposizione quel numero preciso di turni per consegnarlo.  
+La partita finisce quando non ci sono più pacchi presenti sulla mappa e vince il giocatore che ne ha consegnati di più.
 Compilazione
-La compilazione si avvale del programma a linea di comando make e del compilatore gcc. Nella directory di lavoro "BoxGame", eseguire il comando "make install" per creare le directory necessarie alla compilazione. Per compilare server e client eseguire "make bin/server" e "make bin/client".
+La compilazione si avvale del programma a linea di comando make e del compilatore gcc. 
+Nella directory di lavoro "BoxGame", eseguire il comando "make install" per creare le directory necessarie alla compilazione. 
+Per compilare server e client eseguire "make bin/server" e "make bin/client".
 Esecuzione
 Una volta compilati, lanciare il server con "./bin/server PORT_N" dove PORT_N è un intero compreso fra 1024 e 65535. Mentre il server è in esecuzione, lanciare il client con "./bin/client IP_ADDRESS PORT_N" dove IP_ADDRESS è un indirizzo IPv4 valido identificativo della macchina che esegue il server e PORT_N è il port number scelto per il server.
-Il client presenterà un'interfaccia che permette la scelta fra registrazione e login. Se non si possiede un account, selezionare registrazione con la modalità indicata sul terminale e inserire le credenziali. Se lo username inserito è disponibile, la registrazione verrà effettuata e si potrà accedere al gioco. Riavviare il client ed effettuare il login. Attendere che il client comunichi il successo del login e inserisca il giocatore nella partita.
-Durante il gioco, il client visualizzerà la mappa, i giocatori connessi, i loro punteggi e il giocatore di turno. Queste informazioni saranno aggiornate ogni volta che un giocatore effettuerà(?) il proprio turno. La propria posizione è indicata da una "Y" sulla mappa, quella degli altri giocatori da una "P". I pacchi sono indicati con "1", i punti di consegna con "A", gli ostacoli scoperti da una "X". Le caselle navigabili e gli ostacoli ancora nascosti sono "-".
-Quando arriva il turno del giocatore, l'interfaccia visualizzerà i comandi disponibili. Non è possibile prendere un pacco se non è presente nella casella attuale. Non è possibile abbandonare un pacco in una casella che non sia di consegna. Non è possibile muoversi nella casella dove è presente un altro giocatore o un ostacolo. Tentare queste azioni comporterà la perdita del turno attuale. Il movimento verso un bordo della mappa porta al punto corrispondente dal lato opposto.
-Qualora un giocatore abbandoni una partita in corso, potrà rientrare conservando il proprio punteggio effettuando nuovamente il login entro la fine della partita Al termine di una partita il server genererà una nuova sessione. I giocatori connessi verranno inseriti nella nuova partita, i disconnessi saranno eliminati.
+Il client presenterà un'interfaccia che permette la scelta fra registrazione e login. Se non si possiede un account, selezionare registrazione con la modalità indicata sul terminale e inserire le credenziali. Se lo username inserito è disponibile, la registrazione verrà effettuata e si potrà accedere al gioco. 
+Riavviare il client ed effettuare il login, seguendo sempre la modalità descritta dal client all'apertura. Attendere che il client comunichi il successo del login e inserisca il giocatore nella partita.
+Durante il gioco, il client visualizzerà la mappa, i giocatori connessi, i loro punteggi e il giocatore di turno. Queste informazioni saranno aggiornate al passare del turno di ciascun giocatore. 
+Ciascun elemento presente nella mappa è rappresentato da un simbolo:
+"Y" indica la propria posizione sulla mappa;
+"P" indica la posizione degli altri giocatori sulla mappa;
+"1" indica la posizione di un pacco sulla mappa;
+"A" indica la posizione dei punti di consegna sulla mappa;
+"X" indica la posizione degli ostacoli scoperti;
+"-" indica le caselle navigabili e gli ostacoli ancora non scoperti dal giocatore.
+Quando arriva il turno del giocatore, l'interfaccia visualizzerà i comandi disponibili. Non è possibile prendere un pacco se non è presente nella casella occupata dal giocatore. Non è possibile abbandonare un pacco in una casella che non sia di consegna. Non è possibile muoversi in una casella dove è presente un altro giocatore o un ostacolo. Tentare queste azioni comporterà la perdita del turno attuale. Il movimento verso un bordo della mappa porterà il giocatore al punto corrispondente dal lato opposto.
+Qualora un giocatore abbandoni una partita in corso, potrà rientrare conservando il proprio punteggio effettuando nuovamente il login entro la fine della partita. Al termine di una partita il server genererà automaticamente una nuova sessione. I giocatori connessi verranno inseriti nella nuova partita, quelli disconnessi saranno eliminati.
+
+Comunicazione tra client e server
