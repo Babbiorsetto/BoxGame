@@ -6,7 +6,7 @@ Marco Filippo Sameh Losbefero
 
 1. Guida d'uso
 Descrizione del gioco
-BoxGame è un gioco eseguibile su piattaforma bash Linux(???) realizzato in modalità client/server. 
+BoxGame è un gioco eseguibile su piattaforma bash Unix realizzato in modalità client/server. 
 Il server mantiene tutte le informazioni necessarie al progresso della partita e relative agli account dei giocatori, si occupa sia dell'hostaggio delle sessioni di gioco, sia del login e della registrazione dei giocatori.
 Il client consente al giocatore di collegarsi al server per registrarsi o effettuare il login e conseguentemente giocare. Ogni giocatore è dotato di una copia(?) del client di gioco dal quale può connettersi al servizio(?) del server.
 All'inizio della partita i giocatori si troverano collocati su una mappa bidimensionale, in cui sono presenti pacchi(o scatole) da consegnare, i punti di consegna e gli ostacoli, oltre ai giocatori stessi. 
@@ -35,3 +35,32 @@ Quando arriva il turno del giocatore, l'interfaccia visualizzerà i comandi disp
 Qualora un giocatore abbandoni una partita in corso, potrà rientrare conservando il proprio punteggio effettuando nuovamente il login entro la fine della partita. Al termine di una partita il server genererà automaticamente una nuova sessione. I giocatori connessi verranno inseriti nella nuova partita, quelli disconnessi saranno eliminati.
 
 Comunicazione tra client e server
+La comunicazione tra i client ed il server avviene tramite l'utilizzo di una socket Unix. All'avvio, il server inizia un thread che apre la socket e resta in attesa di connessioni sulle interfacce di rete della macchina su cui gira. Il server resterà in attesa finché non si collega alla partita almeno un giocatore.
+Il client invece, all'avvio apre la socket e offre all'utente la possibilità di scegliere tra registrazione e login, dopodiché raccoglie i dati necessari all'operazione (comando, username, password) e li invia in sequenza al server tramite una serie di chiamate "write" effettuate sulla socket, dopodiché resta in attesa di un messaggio dal server che indicherà l'esito dell'operazione di login o registrazione.
+Nel dettaglio, la comunicazione avviene nel seguente modo:
+Il server viene avviato, apre la socket e avvia il thread che resta in ascolto in attesa di connessioni.
+Il client viene avviato, apre la socket e chiede all'utente se vuole registrarsi o effettuare il login.
+L'utente del client sceglie di registrarsi (scrive 'l' come comando nel client)
+    Il client manda la lettera 'r' al client, che descrive il comando che l'utente ha inserito.
+    Subito dopo, il client manda 'username size', 'username', 'password size', 'password'
+    Il server quindi confronta i dati ricevuti e controlla se l'utente è già registrato o meno.
+    Nel caso in cui la registrazione va a buon fine, il server risponde 't' e chiude la connessione e il thread.
+        Il client conferma all'utente l'iscrizione e termina.
+L'utente del client vuole effettuare il login (scrive 'l' come comando nel client)
+    Il client manda 'l' al server.
+    Subito dopo, il client manda 'username size', 'username', 'password size', 'password'
+    Il server risponde 't' e inserisce l'utente nel gioco, o lo reinserisce se era uscito.
+        Il client entra in loop di gioco.
+    Il server risponde 'f' perche' credenziali errate.
+        Il client chiede ancora credenziali.
+    Il server risponde 'a' perche' credenziali giuste ma utente gia' in gioco e attivo.
+        Il client chiede ancora credenziali.
+In qualsiasi momento, se il client viene chiuso dall'utente, il server chiude a sua volta la connessione e termina il thread.
+
+Una volta che un giocatore effettua con successo il login ed entra nel loop di gioco, la comunicazione tra client e server avviene nel seguente modo:
+Quando è il turno del giocatore, il server manda 'c' al client
+    Il client prende dal giocatore il comando da effettuare ('n', 'e', 'o', 's', 'd', 'p', 'q') e lo manda al server che sta in ascolto
+    Il server riceve il comando e manda avanti la partita
+Quando il server deve aggiornare la mappa di tutti i giocatori in seguito ad un turno, manda ai client 's', la lunghezza del messaggio(un intero) e il messaggio (una stringa terminata da null)
+    Il client riceve il messaggio e lo stampa su schermo
+
