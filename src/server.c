@@ -390,7 +390,7 @@ void *handleConnection(void *data)
     int again = 1;
     while (again)
     {
-        // read command, either 'i' or 'a'
+        // read command, either 'l' or 'r'
         error = readNBytes(clientDescriptor, &command, 1);
         if (error == 0)
         {
